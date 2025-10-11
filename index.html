@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MNIST Digit Classification – Inference Visualization</title>
+  <script type="module" crossorigin src="./assets/main-CKMdEyXu.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-tGVg-5rb.css">
+</head>
+<body>
+
+    <!-- 2D Grid Overlay -->
+    <div id="overlay2d" class="overlay-2d">
+      <div class="container">
+        <div id="gridContainer" class="grid-container"></div>
+      </div>
+    </div>
+
+    <!-- Reset Button -->
+    <div id="resetButtonContainer" class="reset-button-container">
+        <button id="resetBtn">✖</button>
+    </div>
+
+    <!-- Prediction Chart Overlay -->
+    <div id="predictionOverlay" class="prediction-overlay">
+        <div class="prediction-container">
+            <div id="predictionChart" class="prediction-chart">
+        
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Overlay -->
+    <div id="instructionsOverlay" class="instructions-overlay">
+        <div class="instructions-container">
+            <div class="instructions-content">
+                <p><strong>Draw:</strong> Click and drag on the grid</p>
+                <p><strong>3D Controls:</strong>  • Left click + drag to rotate   • Right click + drag to pan   • Scroll wheel to zoom</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Instructions Overlay -->
+    <div id="mobileInstructionsOverlay" class="mobile-instructions-overlay">
+        <div class="mobile-instructions-content">
+            <div class="mobile-instructions-title">Touch Controls</div>
+            <ul class="mobile-gesture-list">
+                <li><strong>Draw:</strong> Tap and drag on grid</li>
+                <li><strong>Rotate:</strong> One finger drag</li>
+                <li><strong>Pan:</strong> Two fingers drag</li>
+                <li><strong>Zoom:</strong> Pinch to zoom</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Info Button -->
+    <div id="infoButton" class="info-button">
+        <span>i</span>
+    </div>
+
+    <!-- MNIST Sample Images - Bottom Edge -->
+    <div id="mnistImagesContainer" class="mnist-images-container"></div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="info-modal">
+        <div class="info-modal-content">
+            <div class="info-modal-header">
+                <h3>MNIST Digit Classification – Inference Visualization</h3>
+                <button id="closeInfoModal" class="close-modal-btn">×</button>
+            </div>
+            <div class="info-modal-body">
+                <p><strong>Interactive Neural Network Visualization</strong></p>
+                <p>This app visualizes how a pre-trained Convolutional Neural Network (CNN) is evaluated on handwritten digits in real-time. The model weights were learned beforehand using the MNIST dataset, and here you can see the prediction stage (inference).</p>
+                
+                <h4>How to Use:</h4>
+                <ul>
+                    <li><strong>Draw:</strong> Click and drag on the 2D grid (top-left) to draw a digit</li>
+                    <li><strong>Watch:</strong> See your drawing flow through the neural network layers in 3D</li>
+                    <li><strong>Prediction:</strong> View the network's confidence for each digit (0-9) in the chart (top-right)</li>
+                </ul>
+
+                <h4>Network Architecture:</h4>
+                <ul>
+                    <li><strong>Input Layer:</strong> 28×28 pixel grid (your drawing)</li>
+                    <li><strong>Conv Layer 1:</strong> 3×3 filters → ReLU → MaxPool → 13×13</li>
+                    <li><strong>Conv Layer 2:</strong> 3×3 filters (2 channels) → ReLU → MaxPool → 5×5</li>
+                    <li><strong>Flatten:</strong> Convert 2D features to 1D vector (50 values)</li>
+                    <li><strong>Dense Layer 1:</strong> Fully connected (50 → 22 neurons)</li>
+                    <li><strong>Output Layer:</strong> Softmax classification (22 → 10 classes)</li>
+                </ul>
+
+                <h4>3D Controls:</h4>
+                <ul>
+                    <li><strong>Rotate:</strong> Left click + drag</li>
+                    <li><strong>Pan:</strong> Right click + drag</li>
+                    <li><strong>Zoom:</strong> Scroll wheel</li>
+                </ul>
+
+                <h4>Color Intensity:</h4>
+                <ul>
+                    <li><strong>Grid Cubes:</strong> Color represents neuron activation strength
+                        <ul>
+                            <li>Blue → Green → Red: Low to high activation values</li>
+                            <li>Brighter colors = stronger activations</li>
+                            <li>Dark/gray cubes = inactive neurons</li>
+                        </ul>
+                    </li>
+                    <li><strong>Connection Lines:</strong> Color shows data flow importance
+                        <ul>
+                            <li>Dark gray: Inactive or weak connections</li>
+                            <li>Blue → White → Red: Low to high contribution strength</li>
+                            <li>Only connections that significantly contribute to target neuron activation are colored</li>
+                            <li>Connection strength = source activation × weight value</li>
+                        </ul>
+                    </li>
+                    <li><strong>Filter Weights:</strong> Small 3×3 grids show learned feature detectors
+                        <ul>
+                            <li>Colors represent the actual weight values in the filters</li>
+                            <li>These determine what patterns the network looks for</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h4>Real-time Features:</h4>
+                <ul>
+                    <li><strong>Live Processing:</strong> Watch activations propagate as you draw</li>
+                    <li><strong>Connection Visualization:</strong> See which neurons influence others</li>
+                    <li><strong>Feature Detection:</strong> Observe how filters detect edges and patterns</li>
+                </ul>
+
+                <p class="info-note">The network was intentionally kept small to ensure smooth, real-time visualization, but its limited depth and capacity can cause misclassifications, especially with unusual or ambiguous digit shapes.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.min.js"></script>
+    
+
+
+
+    <!-- 100% privacy-first analytics -->
+    <script data-collect-dnt="true" async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+  
+</body>
+</html>
