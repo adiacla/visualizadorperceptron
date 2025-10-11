@@ -60,17 +60,17 @@ body > canvas {
 .grid {
   display: grid;
   grid-template-columns: repeat(28, 1fr);
-  gap: 2px;
+  gap: 1px;
   background: rgba(18, 26, 48, 0.85);
   border-radius: 12px;
-  padding: 10px;
+  padding: 8px;
   box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.55);
   touch-action: none;
 }
 
 .grid-cell {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.05);
   transition: background 120ms ease, transform 120ms ease;
@@ -399,11 +399,11 @@ button {
 
   .grid {
     gap: 1px;
-    padding: 8px;
+    padding: 6px;
   }
 
   .grid-cell {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 }

@@ -1,9 +1,19 @@
 const CONFIG = {
   weightUrl: "./exports/sample_mlp_weights.json",
-  maxConnectionsPerNeuron: 20,
+  maxConnectionsPerNeuron: 24,
   layerSpacing: 5.5,
-  inputSpacing: 0.32,
-  hiddenSpacing: 0.9,
+  inputSpacing: 0.24,
+  hiddenSpacing: 0.95,
+  inputNodeSize: 0.18,
+  hiddenNodeRadius: 0.22,
+  connectionRadius: 0.017,
+  brush: {
+    drawRadius: 1.45,
+    eraseRadius: 1.6,
+    drawStrength: 0.9,
+    eraseStrength: 0.85,
+    softness: 0.55,
+  },
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -22,13 +32,18 @@ async function initApp() {
   }
 
   const mlp = new MLPNetwork(definition.network);
-  const drawingGrid = new DrawingGrid(document.getElementById("gridContainer"), 28, 28);
+  const drawingGrid = new DrawingGrid(document.getElementById("gridContainer"), 28, 28, {
+    brush: CONFIG.brush,
+  });
   const predictionChart = new PredictionChart(document.getElementById("predictionChart"));
   const visualizer = new NetworkVisualizer(mlp, {
     layerSpacing: CONFIG.layerSpacing,
     maxConnectionsPerNeuron: CONFIG.maxConnectionsPerNeuron,
     inputSpacing: CONFIG.inputSpacing,
     hiddenSpacing: CONFIG.hiddenSpacing,
+    inputNodeSize: CONFIG.inputNodeSize,
+    hiddenNodeRadius: CONFIG.hiddenNodeRadius,
+    connectionRadius: CONFIG.connectionRadius,
   });
 
   const resetBtn = document.getElementById("resetBtn");
@@ -42,9 +57,7 @@ async function initApp() {
   function updateNetwork() {
     const rawInput = drawingGrid.getPixels();
     const forward = mlp.forward(rawInput);
-    const actualActivations = forward.activations;
-    const displayActivations = [rawInput, ...actualActivations.slice(1)];
-    visualizer.update(displayActivations, actualActivations);
+    visualizer.update(forward.activations);
 
     const logitsTyped =
       forward.preActivations.length > 0
@@ -92,7 +105,7 @@ function displayError(message) {
 }
 
 class DrawingGrid {
-  constructor(container, rows, cols) {
+  constructor(container, rows, cols, options = {}) {
     if (!container) {
       throw new Error("Grid container not found.");
     }
@@ -105,6 +118,14 @@ class DrawingGrid {
     this.activeMode = "draw";
     this.onChange = null;
     this.pendingChange = false;
+    const defaultBrush = {
+      drawRadius: 1.2,
+      eraseRadius: 1.2,
+      drawStrength: 0.85,
+      eraseStrength: 0.8,
+      softness: 0.5,
+    };
+    this.brush = Object.assign(defaultBrush, options.brush || {});
     this.buildGrid();
   }
 
@@ -167,12 +188,42 @@ class DrawingGrid {
   }
 
   paintCell(index, erase = false) {
-    const delta = erase ? -0.45 : 0.55;
-    const nextValue = Math.min(1, Math.max(0, this.values[index] + delta));
-    if (nextValue === this.values[index]) return;
-    this.values[index] = nextValue;
-    this.updateCellVisual(index);
-    this.scheduleChange();
+    const row = Math.floor(index / this.cols);
+    const col = index % this.cols;
+    if (row < 0 || col < 0) return;
+    const changed = this.applyBrush(row, col, erase);
+    if (changed) {
+      this.scheduleChange();
+    }
+  }
+
+  applyBrush(centerRow, centerCol, erase = false) {
+    const radius = erase ? this.brush.eraseRadius : this.brush.drawRadius;
+    const strength = erase ? -this.brush.eraseStrength : this.brush.drawStrength;
+    const softness = clamp(this.brush.softness ?? 0.5, 0, 0.95);
+    const span = Math.ceil(radius);
+    let modified = false;
+    for (let row = centerRow - span; row <= centerRow + span; row += 1) {
+      if (row < 0 || row >= this.rows) continue;
+      for (let col = centerCol - span; col <= centerCol + span; col += 1) {
+        if (col < 0 || col >= this.cols) continue;
+        const distance = Math.hypot(row - centerRow, col - centerCol);
+        if (distance > radius) continue;
+        const falloff = 1 - distance / radius;
+        if (falloff <= 0) continue;
+        const influence = Math.pow(falloff, 1 + softness * 2);
+        const delta = strength * influence;
+        if (Math.abs(delta) < 1e-3) continue;
+        const cellIndex = row * this.cols + col;
+        const current = this.values[cellIndex];
+        const nextValue = clamp(current + delta, 0, 1);
+        if (nextValue === current) continue;
+        this.values[cellIndex] = nextValue;
+        this.updateCellVisual(cellIndex);
+        modified = true;
+      }
+    }
+    return modified;
   }
 
   updateCellVisual(index) {
@@ -362,10 +413,12 @@ class NetworkVisualizer {
     this.options = Object.assign(
       {
         layerSpacing: 5.5,
-        nodeRadius: 0.26,
-        maxConnectionsPerNeuron: 16,
-        inputSpacing: 0.32,
-        hiddenSpacing: 0.9,
+        inputSpacing: 0.24,
+        hiddenSpacing: 0.95,
+        inputNodeSize: 0.18,
+        hiddenNodeRadius: 0.22,
+        maxConnectionsPerNeuron: 24,
+        connectionRadius: 0.017,
       },
       options || {},
     );
@@ -413,22 +466,29 @@ class NetworkVisualizer {
   }
 
   buildLayers() {
-    const geometry = new THREE.SphereGeometry(this.options.nodeRadius, 12, 12);
-    const material = new THREE.MeshPhongMaterial({
+    const inputGeometry = new THREE.BoxGeometry(
+      this.options.inputNodeSize,
+      this.options.inputNodeSize,
+      this.options.inputNodeSize,
+    );
+    const hiddenGeometry = new THREE.SphereGeometry(this.options.hiddenNodeRadius, 16, 16);
+    const baseMaterial = new THREE.MeshPhongMaterial({
       color: 0x111a2e,
       shininess: 35,
       specular: 0x1c2d4f,
       transparent: true,
       opacity: 0.95,
     });
-    material.vertexColors = true;
+    baseMaterial.vertexColors = true;
 
     const layerCount = this.mlp.architecture.length;
     const totalWidth = (layerCount - 1) * this.options.layerSpacing;
     const startX = -totalWidth / 2;
 
     this.mlp.architecture.forEach((neuronCount, layerIndex) => {
-      const mesh = new THREE.InstancedMesh(geometry, material.clone(), neuronCount);
+      const geometry = layerIndex === 0 ? inputGeometry : hiddenGeometry;
+      const material = baseMaterial.clone();
+      const mesh = new THREE.InstancedMesh(geometry, material, neuronCount);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(neuronCount * 3), 3);
       mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
@@ -493,7 +553,8 @@ class NetworkVisualizer {
   }
 
   buildConnections() {
-    const geometry = new THREE.CylinderGeometry(0.025, 0.025, 1, 6, 1, true);
+    const connectionRadius = this.options.connectionRadius ?? 0.02;
+    const geometry = new THREE.CylinderGeometry(connectionRadius, connectionRadius, 1, 10, 1, true);
     const material = new THREE.MeshBasicMaterial({
       transparent: true,
       opacity: 0.45,
@@ -568,16 +629,16 @@ class NetworkVisualizer {
     return { selected, maxAbsWeight };
   }
 
-  update(displayActivations, actualActivations) {
+  update(activations) {
     this.layerMeshes.forEach((layer, layerIndex) => {
-      const values = displayActivations[layerIndex];
+      const values = activations[layerIndex];
       if (!values) return;
-      const scale = layerIndex === 0 ? 1 : maxAbsValue(actualActivations[layerIndex]);
+      const scale = layerIndex === 0 ? 4.5 : maxAbsValue(activations[layerIndex]);
       this.applyNodeColors(layer.mesh, values, scale || 1);
     });
 
     this.connectionGroups.forEach((group) => {
-      const sourceValues = actualActivations[group.sourceLayer];
+      const sourceValues = activations[group.sourceLayer];
       if (!sourceValues) return;
       this.applyConnectionColors(group, sourceValues);
     });
@@ -587,19 +648,24 @@ class NetworkVisualizer {
     const safeScale = scale > 1e-6 ? scale : 1;
     for (let i = 0; i < values.length; i += 1) {
       const value = values[i];
-      const intensity = Math.min(1, Math.abs(value) / safeScale);
-      if (intensity < 0.015) {
+      const normalized = clamp(value / safeScale, -1, 1);
+      const magnitude = Math.abs(normalized);
+      if (magnitude < 0.08) {
         this.tempColor.setRGB(0.08, 0.1, 0.18);
-      } else if (value >= 0) {
-        const r = 0.14 + 0.86 * intensity;
-        const g = 0.24 + 0.62 * intensity;
-        const b = 0.28 + 0.18 * intensity;
-        this.tempColor.setRGB(r, g, b);
+      } else if (normalized >= 0) {
+        const t = magnitude;
+        this.tempColor.setRGB(
+          lerp(0.26, 1.0, t),
+          lerp(0.32, 0.95, t),
+          lerp(0.34, 0.45, t),
+        );
       } else {
-        const r = 0.16 + 0.24 * intensity;
-        const g = 0.22 + 0.48 * intensity;
-        const b = 0.32 + 0.68 * intensity;
-        this.tempColor.setRGB(r, g, b);
+        const t = magnitude;
+        this.tempColor.setRGB(
+          lerp(0.12, 0.24, t),
+          lerp(0.2, 0.38, t),
+          lerp(0.42, 0.96, t),
+        );
       }
       mesh.setColorAt(i, this.tempColor);
     }
@@ -618,20 +684,24 @@ class NetworkVisualizer {
     });
     const scale = maxContribution > 1e-6 ? maxContribution : group.maxAbsWeight || 1;
     group.connections.forEach((connection, index) => {
-      const value = contributions[index];
-      const intensity = Math.min(1, Math.abs(value) / scale);
-      if (intensity < 0.02) {
+      const normalized = clamp(contributions[index] / scale, -1, 1);
+      const magnitude = Math.abs(normalized);
+      if (magnitude < 0.025) {
         this.tempColor.setRGB(0.08, 0.1, 0.18);
-      } else if (value >= 0) {
-        const r = 0.25 + 0.75 * intensity;
-        const g = 0.32 + 0.45 * intensity;
-        const b = 0.2 + 0.15 * intensity;
-        this.tempColor.setRGB(r, g, b);
+      } else if (normalized >= 0) {
+        const t = magnitude;
+        this.tempColor.setRGB(
+          lerp(0.3, 1.0, t),
+          lerp(0.38, 0.9, t),
+          lerp(0.28, 0.48, t),
+        );
       } else {
-        const r = 0.2 + 0.18 * intensity;
-        const g = 0.28 + 0.4 * intensity;
-        const b = 0.4 + 0.55 * intensity;
-        this.tempColor.setRGB(r, g, b);
+        const t = magnitude;
+        this.tempColor.setRGB(
+          lerp(0.14, 0.3, t),
+          lerp(0.22, 0.42, t),
+          lerp(0.46, 0.98, t),
+        );
       }
       group.mesh.setColorAt(index, this.tempColor);
     });
@@ -652,6 +722,14 @@ class NetworkVisualizer {
       this.renderer.render(this.scene, this.camera);
     });
   }
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
 }
 
 function softmax(values) {
