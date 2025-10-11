@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MNIST Digit Classification – Inference Visualization</title>
+    <title>MNIST MLP – Inference Visualization</title>
   <script type="module" crossorigin src="./assets/main-CKMdEyXu.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/main-tGVg-5rb.css">
 </head>
@@ -34,8 +34,8 @@
     <div id="instructionsOverlay" class="instructions-overlay">
         <div class="instructions-container">
             <div class="instructions-content">
-                <p><strong>Draw:</strong> Click and drag on the grid</p>
-                <p><strong>3D Controls:</strong>  • Left click + drag to rotate   • Right click + drag to pan   • Scroll wheel to zoom</p>
+                <p><strong>Draw:</strong> Click and drag on the grid (right click to erase)</p>
+                <p><strong>3D Controls:</strong> • Left drag = rotate • Right drag = pan • Scroll = zoom</p>
             </div>
         </div>
     </div>
@@ -70,7 +70,7 @@
             </div>
             <div class="info-modal-body">
                 <p><strong>Interactive Neural Network Visualization</strong></p>
-                <p>This app visualizes how a pre-trained Convolutional Neural Network (CNN) is evaluated on handwritten digits in real-time. The model weights were learned beforehand using the MNIST dataset, and here you can see the prediction stage (inference).</p>
+                <p>This experience highlights a compact multi-layer perceptron (MLP) trained on MNIST. Draw a digit and watch the activations course through each fully-connected layer in real time.</p>
                 
                 <h4>How to Use:</h4>
                 <ul>
@@ -79,14 +79,12 @@
                     <li><strong>Prediction:</strong> View the network's confidence for each digit (0-9) in the chart (top-right)</li>
                 </ul>
 
-                <h4>Network Architecture:</h4>
+                <h4>Network Architecture (default export):</h4>
                 <ul>
                     <li><strong>Input Layer:</strong> 28×28 pixel grid (your drawing)</li>
-                    <li><strong>Conv Layer 1:</strong> 3×3 filters → ReLU → MaxPool → 13×13</li>
-                    <li><strong>Conv Layer 2:</strong> 3×3 filters (2 channels) → ReLU → MaxPool → 5×5</li>
-                    <li><strong>Flatten:</strong> Convert 2D features to 1D vector (50 values)</li>
-                    <li><strong>Dense Layer 1:</strong> Fully connected (50 → 22 neurons)</li>
-                    <li><strong>Output Layer:</strong> Softmax classification (22 → 10 classes)</li>
+                    <li><strong>Dense Layer 1:</strong> 784 → 64 neurons with ReLU</li>
+                    <li><strong>Dense Layer 2:</strong> 64 → 32 neurons with ReLU</li>
+                    <li><strong>Output Layer:</strong> 32 → 10 logits → softmax probabilities</li>
                 </ul>
 
                 <h4>3D Controls:</h4>
@@ -96,46 +94,33 @@
                     <li><strong>Zoom:</strong> Scroll wheel</li>
                 </ul>
 
-                <h4>Color Intensity:</h4>
+                <h4>Color Mapping:</h4>
                 <ul>
-                    <li><strong>Grid Cubes:</strong> Color represents neuron activation strength
-                        <ul>
-                            <li>Blue → Green → Red: Low to high activation values</li>
-                            <li>Brighter colors = stronger activations</li>
-                            <li>Dark/gray cubes = inactive neurons</li>
-                        </ul>
-                    </li>
-                    <li><strong>Connection Lines:</strong> Color shows data flow importance
-                        <ul>
-                            <li>Dark gray: Inactive or weak connections</li>
-                            <li>Blue → White → Red: Low to high contribution strength</li>
-                            <li>Only connections that significantly contribute to target neuron activation are colored</li>
-                            <li>Connection strength = source activation × weight value</li>
-                        </ul>
-                    </li>
-                    <li><strong>Filter Weights:</strong> Small 3×3 grids show learned feature detectors
-                        <ul>
-                            <li>Colors represent the actual weight values in the filters</li>
-                            <li>These determine what patterns the network looks for</li>
-                        </ul>
-                    </li>
+                    <li><strong>Nodes:</strong> Color represents activation strength (deep blues for low/negative values, vibrant corals for strong positive activations)</li>
+                    <li><strong>Connections:</strong> Bright warm tones indicate strong positive contributions, cool tones show negative influence, and dim lines are near-zero.</li>
+                </ul>
+
+                <h4>Train & Export Your Own:</h4>
+                <ul>
+                    <li>Run <code>python training/mlp_train.py</code> to train the MLP with Apple Metal acceleration when available.</li>
+                    <li>The script writes <code>exports/mlp_weights.json</code>, which the visualizer loads on refresh.</li>
+                    <li>Tweak hidden sizes, epochs, or export paths via CLI flags documented in <code>training/mlp_train.py</code>.</li>
                 </ul>
 
                 <h4>Real-time Features:</h4>
                 <ul>
-                    <li><strong>Live Processing:</strong> Watch activations propagate as you draw</li>
-                    <li><strong>Connection Visualization:</strong> See which neurons influence others</li>
-                    <li><strong>Feature Detection:</strong> Observe how filters detect edges and patterns</li>
+                    <li><strong>Layer Activations:</strong> Instanced spheres show activations per neuron with color-coded magnitude.</li>
+                    <li><strong>Important Connections:</strong> Each target neuron displays its strongest incoming weights for clarity.</li>
+                    <li><strong>Live Probabilities:</strong> The bar chart updates logits → softmax probabilities in real time.</li>
                 </ul>
 
-                <p class="info-note">The network was intentionally kept small to ensure smooth, real-time visualization, but its limited depth and capacity can cause misclassifications, especially with unusual or ambiguous digit shapes.</p>
+                <p class="info-note">The network is intentionally compact for smooth, real-time rendering. Feel free to retrain with different layer sizes—just keep the architecture modest so the 3D view stays responsive.</p>
             </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.min.js"></script>
     
 
 
