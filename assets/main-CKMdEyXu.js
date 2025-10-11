@@ -434,7 +434,7 @@ class NetworkVisualizer {
 
   initThreeScene() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x05080f);
+    this.scene.background = new THREE.Color(0xffffff);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -452,14 +452,20 @@ class NetworkVisualizer {
     this.controls.maxDistance = 52;
     this.controls.target.set(0, 6, 0);
 
-    const ambient = new THREE.AmbientLight(0x8fa9ff, 0.65);
+    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
     this.scene.add(ambient);
-    const directional = new THREE.DirectionalLight(0xffffff, 0.75);
-    directional.position.set(12, 18, 18);
+    const hemisphere = new THREE.HemisphereLight(0xffffff, 0x1a1d2e, 0.9);
+    hemisphere.position.set(0, 20, 0);
+    this.scene.add(hemisphere);
+    const directional = new THREE.DirectionalLight(0xffffff, 1.4);
+    directional.position.set(18, 26, 24);
+    directional.castShadow = true;
     this.scene.add(directional);
-
-    const rimLight = new THREE.DirectionalLight(0x4f8dfc, 0.4);
-    rimLight.position.set(-18, 10, -16);
+    const fillLight = new THREE.DirectionalLight(0xa8c5ff, 0.8);
+    fillLight.position.set(-20, 18, -18);
+    this.scene.add(fillLight);
+    const rimLight = new THREE.PointLight(0x88a4ff, 0.6, 60, 1.6);
+    rimLight.position.set(0, 12, -24);
     this.scene.add(rimLight);
 
     window.addEventListener("resize", () => this.handleResize());
@@ -472,13 +478,7 @@ class NetworkVisualizer {
       this.options.inputNodeSize,
     );
     const hiddenGeometry = new THREE.SphereGeometry(this.options.hiddenNodeRadius, 16, 16);
-    const baseMaterial = new THREE.MeshPhongMaterial({
-      color: 0x111a2e,
-      shininess: 35,
-      specular: 0x1c2d4f,
-      transparent: true,
-      opacity: 0.95,
-    });
+    const baseMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     baseMaterial.vertexColors = true;
 
     const layerCount = this.mlp.architecture.length;
@@ -490,8 +490,10 @@ class NetworkVisualizer {
       const material = baseMaterial.clone();
       const mesh = new THREE.InstancedMesh(geometry, material, neuronCount);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(neuronCount * 3), 3);
-      mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+      const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(neuronCount * 3), 3);
+      colorAttribute.setUsage(THREE.DynamicDrawUsage);
+      mesh.instanceColor = colorAttribute;
+      mesh.geometry.setAttribute("instanceColor", colorAttribute);
 
       const layerX = startX + layerIndex * this.options.layerSpacing;
       const positions = this.computeLayerPositions(layerIndex, neuronCount, layerX);
@@ -500,7 +502,7 @@ class NetworkVisualizer {
         this.tempObject.position.copy(position);
         this.tempObject.updateMatrix();
         mesh.setMatrixAt(instanceIndex, this.tempObject.matrix);
-        const baseColor = this.tempColor.setRGB(0.08, 0.1, 0.18);
+        const baseColor = this.tempColor.setRGB(1, 1, 1);
         mesh.setColorAt(instanceIndex, baseColor);
       });
 
@@ -568,8 +570,10 @@ class NetworkVisualizer {
 
       const mesh = new THREE.InstancedMesh(geometry, material.clone(), selected.length);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(selected.length * 3), 3);
-      mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+      const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(selected.length * 3), 3);
+      colorAttribute.setUsage(THREE.DynamicDrawUsage);
+      mesh.instanceColor = colorAttribute;
+      mesh.geometry.setAttribute("instanceColor", colorAttribute);
 
       selected.forEach((connection, instanceIndex) => {
         const sourcePosition = this.layerMeshes[layerIndex].positions[connection.sourceIndex];
@@ -587,7 +591,7 @@ class NetworkVisualizer {
         this.tempObject.quaternion.copy(quaternion);
         this.tempObject.updateMatrix();
         mesh.setMatrixAt(instanceIndex, this.tempObject.matrix);
-        mesh.setColorAt(instanceIndex, this.tempColor.setRGB(0.1, 0.12, 0.18));
+        mesh.setColorAt(instanceIndex, this.tempColor.setRGB(1, 1, 1));
       });
 
       mesh.instanceMatrix.needsUpdate = true;
@@ -633,7 +637,7 @@ class NetworkVisualizer {
     this.layerMeshes.forEach((layer, layerIndex) => {
       const values = activations[layerIndex];
       if (!values) return;
-      const scale = layerIndex === 0 ? 4.5 : maxAbsValue(activations[layerIndex]);
+      const scale = layerIndex === 0 ? 2.5 : maxAbsValue(activations[layerIndex]);
       this.applyNodeColors(layer.mesh, values, scale || 1);
     });
 
@@ -650,21 +654,21 @@ class NetworkVisualizer {
       const value = values[i];
       const normalized = clamp(value / safeScale, -1, 1);
       const magnitude = Math.abs(normalized);
-      if (magnitude < 0.08) {
-        this.tempColor.setRGB(0.08, 0.1, 0.18);
+      if (magnitude < 0.02) {
+        this.tempColor.setRGB(0.12, 0.14, 0.2);
       } else if (normalized >= 0) {
         const t = magnitude;
         this.tempColor.setRGB(
-          lerp(0.26, 1.0, t),
-          lerp(0.32, 0.95, t),
-          lerp(0.34, 0.45, t),
+          lerp(0.35, 1.0, t),
+          lerp(0.4, 0.98, t),
+          lerp(0.28, 0.65, t),
         );
       } else {
         const t = magnitude;
         this.tempColor.setRGB(
-          lerp(0.12, 0.24, t),
-          lerp(0.2, 0.38, t),
-          lerp(0.42, 0.96, t),
+          lerp(0.1, 0.35, t),
+          lerp(0.18, 0.45, t),
+          lerp(0.45, 1.0, t),
         );
       }
       mesh.setColorAt(i, this.tempColor);
@@ -686,21 +690,21 @@ class NetworkVisualizer {
     group.connections.forEach((connection, index) => {
       const normalized = clamp(contributions[index] / scale, -1, 1);
       const magnitude = Math.abs(normalized);
-      if (magnitude < 0.025) {
-        this.tempColor.setRGB(0.08, 0.1, 0.18);
+      if (magnitude < 0.01) {
+        this.tempColor.setRGB(0.12, 0.14, 0.2);
       } else if (normalized >= 0) {
         const t = magnitude;
         this.tempColor.setRGB(
-          lerp(0.3, 1.0, t),
-          lerp(0.38, 0.9, t),
-          lerp(0.28, 0.48, t),
+          lerp(0.38, 1.0, t),
+          lerp(0.45, 0.95, t),
+          lerp(0.25, 0.6, t),
         );
       } else {
         const t = magnitude;
         this.tempColor.setRGB(
-          lerp(0.14, 0.3, t),
-          lerp(0.22, 0.42, t),
-          lerp(0.46, 0.98, t),
+          lerp(0.12, 0.38, t),
+          lerp(0.2, 0.48, t),
+          lerp(0.5, 1.0, t),
         );
       }
       group.mesh.setColorAt(index, this.tempColor);
