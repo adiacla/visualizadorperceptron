@@ -8,11 +8,11 @@ const CONFIG = {
   hiddenNodeRadius: 0.22,
   connectionRadius: 0.017,
   brush: {
-    drawRadius: 1.45,
-    eraseRadius: 1.6,
-    drawStrength: 0.9,
-    eraseStrength: 0.85,
-    softness: 0.55,
+    drawRadius: 2.0,
+    eraseRadius: 2.5,
+    drawStrength: 0.95,
+    eraseStrength: 0.95,
+    softness: 0.3,
   },
 };
 
