@@ -1,4 +1,4 @@
-const CONFIG = {
+const VISUALIZER_CONFIG = {
   weightUrl: "./exports/sample_mlp_weights.json",
   maxConnectionsPerNeuron: 24,
   layerSpacing: 5.5,
@@ -17,63 +17,63 @@ const CONFIG = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  initApp().catch((error) => {
+  initializeVisualizer().catch((error) => {
     console.error(error);
-    displayError("Unable to initialise the visualisation. See console for details.");
+    renderErrorMessage("Visualisierung konnte nicht initialisiert werden. Details finden Sie in der Konsole.");
   });
 });
 
-async function initApp() {
-  setupInfoModal();
+async function initializeVisualizer() {
+  initializeInfoDialog();
 
-  const definition = await loadNetworkDefinition(CONFIG.weightUrl);
+  const definition = await fetchNetworkDefinition(VISUALIZER_CONFIG.weightUrl);
   if (!definition?.network) {
-    throw new Error("Invalid network definition.");
+    throw new Error("Ungültige Netzwerkdefinition.");
   }
 
-  const mlp = new MLPNetwork(definition.network);
-  const drawingGrid = new DrawingGrid(document.getElementById("gridContainer"), 28, 28, {
-    brush: CONFIG.brush,
+  const neuralModel = new FeedForwardModel(definition.network);
+  const digitCanvas = new DigitSketchPad(document.getElementById("gridContainer"), 28, 28, {
+    brush: VISUALIZER_CONFIG.brush,
   });
-  const predictionChart = new PredictionChart(document.getElementById("predictionChart"));
-  const visualizer = new NetworkVisualizer(mlp, {
-    layerSpacing: CONFIG.layerSpacing,
-    maxConnectionsPerNeuron: CONFIG.maxConnectionsPerNeuron,
-    inputSpacing: CONFIG.inputSpacing,
-    hiddenSpacing: CONFIG.hiddenSpacing,
-    inputNodeSize: CONFIG.inputNodeSize,
-    hiddenNodeRadius: CONFIG.hiddenNodeRadius,
-    connectionRadius: CONFIG.connectionRadius,
+  const probabilityPanel = new ProbabilityPanel(document.getElementById("predictionChart"));
+  const neuralScene = new NeuralVisualizer(neuralModel, {
+    layerSpacing: VISUALIZER_CONFIG.layerSpacing,
+    maxConnectionsPerNeuron: VISUALIZER_CONFIG.maxConnectionsPerNeuron,
+    inputSpacing: VISUALIZER_CONFIG.inputSpacing,
+    hiddenSpacing: VISUALIZER_CONFIG.hiddenSpacing,
+    inputNodeSize: VISUALIZER_CONFIG.inputNodeSize,
+    hiddenNodeRadius: VISUALIZER_CONFIG.hiddenNodeRadius,
+    connectionRadius: VISUALIZER_CONFIG.connectionRadius,
   });
 
   const resetBtn = document.getElementById("resetBtn");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
-      drawingGrid.clear();
-      updateNetwork();
+      digitCanvas.clear();
+      refreshNetworkState();
     });
   }
 
-  function updateNetwork() {
-    const rawInput = drawingGrid.getPixels();
-    const forward = mlp.forward(rawInput);
-    const activationsForVisualization = forward.activations.slice();
+  function refreshNetworkState() {
+    const rawInput = digitCanvas.getPixels();
+    const propagation = neuralModel.propagate(rawInput);
+    const activationsForVisualization = propagation.activations.slice();
     activationsForVisualization[0] = rawInput;
-    visualizer.update(activationsForVisualization, forward.activations);
+    neuralScene.update(activationsForVisualization, propagation.activations);
 
     const logitsTyped =
-      forward.preActivations.length > 0
-        ? forward.preActivations[forward.preActivations.length - 1]
+      propagation.preActivations.length > 0
+        ? propagation.preActivations[propagation.preActivations.length - 1]
         : new Float32Array(0);
     const probabilities = softmax(Array.from(logitsTyped));
-    predictionChart.update(probabilities);
+    probabilityPanel.update(probabilities);
   }
 
-  drawingGrid.setChangeHandler(() => updateNetwork());
-  updateNetwork();
+  digitCanvas.setChangeHandler(() => refreshNetworkState());
+  refreshNetworkState();
 }
 
-function setupInfoModal() {
+function initializeInfoDialog() {
   const infoButton = document.getElementById("infoButton");
   const infoModal = document.getElementById("infoModal");
   const closeButton = document.getElementById("closeInfoModal");
@@ -91,25 +91,25 @@ function setupInfoModal() {
   });
 }
 
-async function loadNetworkDefinition(url) {
+async function fetchNetworkDefinition(url) {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
-    throw new Error(`Failed to load network weights (${response.status})`);
+    throw new Error(`Netzwerkgewichte konnten nicht geladen werden (${response.status})`);
   }
   return response.json();
 }
 
-function displayError(message) {
+function renderErrorMessage(message) {
   const chart = document.getElementById("predictionChart");
   if (chart) {
     chart.innerHTML = `<p class="error-text">${message}</p>`;
   }
 }
 
-class DrawingGrid {
+class DigitSketchPad {
   constructor(container, rows, cols, options = {}) {
     if (!container) {
-      throw new Error("Grid container not found.");
+      throw new Error("Raster-Container nicht gefunden.");
     }
     this.container = container;
     this.rows = rows;
@@ -148,7 +148,7 @@ class DrawingGrid {
     this.container.innerHTML = "";
     const title = document.createElement("div");
     title.className = "grid-title";
-    title.textContent = "Draw a Digit";
+    title.textContent = "Ziffer zeichnen";
     this.container.appendChild(title);
     this.container.appendChild(this.gridElement);
 
@@ -270,10 +270,10 @@ class DrawingGrid {
   }
 }
 
-class MLPNetwork {
+class FeedForwardModel {
   constructor(definition) {
     if (!definition.layers?.length) {
-      throw new Error("Network definition must contain layers.");
+      throw new Error("Die Netzwerkdefinition muss Schichten enthalten.");
     }
     this.normalization = definition.normalization ?? { mean: 0, std: 1 };
     this.architecture = Array.isArray(definition.architecture)
@@ -298,7 +298,7 @@ class MLPNetwork {
     return architecture;
   }
 
-  forward(pixels) {
+  propagate(pixels) {
     const { mean, std } = this.normalization;
     const input = new Float32Array(pixels.length);
     for (let i = 0; i < pixels.length; i += 1) {
@@ -344,12 +344,12 @@ class MLPNetwork {
   }
 }
 
-class PredictionChart {
+class ProbabilityPanel {
   constructor(container) {
     this.container = container;
     this.rows = [];
     if (!this.container) {
-      throw new Error("Prediction chart container not found.");
+      throw new Error("Vorhersage-Diagrammcontainer nicht gefunden.");
     }
     this.build();
   }
@@ -357,7 +357,7 @@ class PredictionChart {
   build() {
     this.container.innerHTML = "";
     const title = document.createElement("h3");
-    title.textContent = "Digit Probabilities";
+    title.textContent = "Wahrscheinlichkeiten der Ziffern";
     this.container.appendChild(title);
 
     this.chartElement = document.createElement("div");
@@ -409,7 +409,7 @@ class PredictionChart {
   }
 }
 
-class NetworkVisualizer {
+class NeuralVisualizer {
   constructor(mlp, options) {
     this.mlp = mlp;
     this.options = Object.assign(
