@@ -57,7 +57,9 @@ async function initApp() {
   function updateNetwork() {
     const rawInput = drawingGrid.getPixels();
     const forward = mlp.forward(rawInput);
-    visualizer.update(forward.activations);
+    const activationsForVisualization = forward.activations.slice();
+    activationsForVisualization[0] = rawInput;
+    visualizer.update(activationsForVisualization, forward.activations);
 
     const logitsTyped =
       forward.preActivations.length > 0
@@ -478,38 +480,59 @@ class NetworkVisualizer {
       this.options.inputNodeSize,
     );
     const hiddenGeometry = new THREE.SphereGeometry(this.options.hiddenNodeRadius, 16, 16);
-    const baseMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    baseMaterial.vertexColors = true;
+    const hiddenBaseMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    hiddenBaseMaterial.emissive.setRGB(0.1, 0.1, 0.1);
+    hiddenBaseMaterial.vertexColors = true;
 
     const layerCount = this.mlp.architecture.length;
     const totalWidth = (layerCount - 1) * this.options.layerSpacing;
     const startX = -totalWidth / 2;
 
     this.mlp.architecture.forEach((neuronCount, layerIndex) => {
-      const geometry = layerIndex === 0 ? inputGeometry : hiddenGeometry;
-      const material = baseMaterial.clone();
-      const mesh = new THREE.InstancedMesh(geometry, material, neuronCount);
-      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(neuronCount * 3), 3);
-      colorAttribute.setUsage(THREE.DynamicDrawUsage);
-      mesh.instanceColor = colorAttribute;
-      mesh.geometry.setAttribute("instanceColor", colorAttribute);
-
       const layerX = startX + layerIndex * this.options.layerSpacing;
       const positions = this.computeLayerPositions(layerIndex, neuronCount, layerX);
 
-      positions.forEach((position, instanceIndex) => {
-        this.tempObject.position.copy(position);
-        this.tempObject.updateMatrix();
-        mesh.setMatrixAt(instanceIndex, this.tempObject.matrix);
-        const baseColor = this.tempColor.setRGB(1, 1, 1);
-        mesh.setColorAt(instanceIndex, baseColor);
-      });
+      if (layerIndex === 0) {
+        const material = new THREE.MeshLambertMaterial();
+        material.emissive.setRGB(0.08, 0.08, 0.08);
+        const mesh = new THREE.InstancedMesh(inputGeometry, material, neuronCount);
+        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(neuronCount * 3), 3);
+        colorAttribute.setUsage(THREE.DynamicDrawUsage);
+        mesh.instanceColor = colorAttribute;
 
-      mesh.instanceMatrix.needsUpdate = true;
-      mesh.instanceColor.needsUpdate = true;
-      this.scene.add(mesh);
-      this.layerMeshes.push({ mesh, positions });
+        positions.forEach((position, instanceIndex) => {
+          this.tempObject.position.copy(position);
+          this.tempObject.updateMatrix();
+          mesh.setMatrixAt(instanceIndex, this.tempObject.matrix);
+          mesh.setColorAt(instanceIndex, this.tempColor.setRGB(0.15, 0.15, 0.15));
+        });
+
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.instanceColor.needsUpdate = true;
+        this.scene.add(mesh);
+        this.layerMeshes.push({ mesh, positions, type: "input" });
+      } else {
+        const material = hiddenBaseMaterial.clone();
+        material.vertexColors = true;
+        const mesh = new THREE.InstancedMesh(hiddenGeometry, material, neuronCount);
+        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(neuronCount * 3), 3);
+        colorAttribute.setUsage(THREE.DynamicDrawUsage);
+        mesh.instanceColor = colorAttribute;
+
+        positions.forEach((position, instanceIndex) => {
+          this.tempObject.position.copy(position);
+          this.tempObject.updateMatrix();
+          mesh.setMatrixAt(instanceIndex, this.tempObject.matrix);
+          mesh.setColorAt(instanceIndex, this.tempColor.setRGB(0.15, 0.15, 0.15));
+        });
+
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.instanceColor.needsUpdate = true;
+        this.scene.add(mesh);
+        this.layerMeshes.push({ mesh, positions, type: "hidden" });
+      }
     });
   }
 
@@ -557,12 +580,12 @@ class NetworkVisualizer {
   buildConnections() {
     const connectionRadius = this.options.connectionRadius ?? 0.02;
     const geometry = new THREE.CylinderGeometry(connectionRadius, connectionRadius, 1, 10, 1, true);
-    const material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshLambertMaterial({
       transparent: true,
       opacity: 0.45,
       depthWrite: false,
-      vertexColors: true,
     });
+    material.vertexColors = true;
 
     this.mlp.layers.forEach((layer, layerIndex) => {
       const { selected, maxAbsWeight } = this.findImportantConnections(layer);
@@ -573,7 +596,6 @@ class NetworkVisualizer {
       const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(selected.length * 3), 3);
       colorAttribute.setUsage(THREE.DynamicDrawUsage);
       mesh.instanceColor = colorAttribute;
-      mesh.geometry.setAttribute("instanceColor", colorAttribute);
 
       selected.forEach((connection, instanceIndex) => {
         const sourcePosition = this.layerMeshes[layerIndex].positions[connection.sourceIndex];
@@ -633,22 +655,33 @@ class NetworkVisualizer {
     return { selected, maxAbsWeight };
   }
 
-  update(activations) {
+  update(displayActivations, networkActivations = displayActivations) {
     this.layerMeshes.forEach((layer, layerIndex) => {
-      const values = activations[layerIndex];
+      const values = displayActivations[layerIndex];
       if (!values) return;
-      const scale = layerIndex === 0 ? 2.5 : maxAbsValue(activations[layerIndex]);
-      this.applyNodeColors(layer.mesh, values, scale || 1);
+      const scale = layerIndex === 0 ? 1 : maxAbsValue(displayActivations[layerIndex]);
+      this.applyNodeColors(layer, values, scale || 1);
     });
 
     this.connectionGroups.forEach((group) => {
-      const sourceValues = activations[group.sourceLayer];
+      const sourceValues = networkActivations[group.sourceLayer];
       if (!sourceValues) return;
       this.applyConnectionColors(group, sourceValues);
     });
   }
 
-  applyNodeColors(mesh, values, scale) {
+  applyNodeColors(layer, values, scale) {
+    const { mesh, type } = layer;
+    if (type === "input") {
+      for (let i = 0; i < values.length; i += 1) {
+        const value = clamp(values[i], 0, 1);
+        this.tempColor.setRGB(value, value, value);
+        mesh.setColorAt(i, this.tempColor);
+      }
+      mesh.instanceColor.needsUpdate = true;
+      return;
+    }
+
     const safeScale = scale > 1e-6 ? scale : 1;
     for (let i = 0; i < values.length; i += 1) {
       const value = values[i];
