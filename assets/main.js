@@ -491,8 +491,8 @@ class NeuralVisualizer {
       this.options.inputNodeSize,
     );
     const hiddenGeometry = new THREE.SphereGeometry(this.options.hiddenNodeRadius, 16, 16);
-    // Use Lambert for hidden nodes as well to ensure robust vertexColor support across Three.js versions
-    const hiddenBaseMaterial = new THREE.MeshLambertMaterial({ vertexColors: true });
+    // Match input layer approach: Lambert material without explicit vertexColors flag
+    const hiddenBaseMaterial = new THREE.MeshLambertMaterial();
     hiddenBaseMaterial.emissive.setRGB(0.08, 0.08, 0.08);
     hiddenBaseMaterial.toneMapped = false;
 
@@ -509,9 +509,7 @@ class NeuralVisualizer {
         material.emissive.setRGB(0.08, 0.08, 0.08);
         const mesh = new THREE.InstancedMesh(inputGeometry, material, neuronCount);
         mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-        const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(neuronCount * 3), 3);
-        colorAttribute.setUsage(THREE.DynamicDrawUsage);
-        mesh.instanceColor = colorAttribute;
+        // Let setColorAt manage creation of the instanceColor attribute for parity with input layer
 
         positions.forEach((position, instanceIndex) => {
           this.tempObject.position.copy(position);
@@ -530,11 +528,8 @@ class NeuralVisualizer {
         const geometry = hiddenGeometry.clone();
         const mesh = new THREE.InstancedMesh(geometry, material, neuronCount);
         mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-        const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(neuronCount * 3), 3);
-        colorAttribute.setUsage(THREE.DynamicDrawUsage);
-        mesh.instanceColor = colorAttribute;
-        // Bind attribute on geometry for compatibility with older Three.js builds
-        mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
+        // Let setColorAt manage creation of the instanceColor attribute for parity with input layer
+        // Do not bind attribute manually; let setColorAt/manage handle instancing color like input layer
 
         positions.forEach((position, instanceIndex) => {
           this.tempObject.position.copy(position);
@@ -600,7 +595,7 @@ class NeuralVisualizer {
       opacity: 0.45,
       depthWrite: false,
     });
-    material.vertexColors = true;
+    // Do not set vertexColors explicitly; instancing color works independently
 
     this.mlp.layers.forEach((layer, layerIndex) => {
       const { selected, maxAbsWeight } = this.findImportantConnections(layer);
@@ -609,11 +604,8 @@ class NeuralVisualizer {
       // Clone geometry per mesh so instanceColor can be bound independently
       const mesh = new THREE.InstancedMesh(baseGeometry.clone(), material.clone(), selected.length);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(selected.length * 3), 3);
-      colorAttribute.setUsage(THREE.DynamicDrawUsage);
-      mesh.instanceColor = colorAttribute;
-      // Bind attribute on geometry for compatibility with older Three.js versions
-      mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
+        // Let setColorAt manage creation of the instanceColor attribute for parity with input layer
+      // Do not bind attribute manually; keep parity with input layer behavior
 
       selected.forEach((connection, instanceIndex) => {
         const sourcePosition = this.layerMeshes[layerIndex].positions[connection.sourceIndex];
