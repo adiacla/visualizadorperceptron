@@ -491,9 +491,10 @@ class NeuralVisualizer {
       this.options.inputNodeSize,
     );
     const hiddenGeometry = new THREE.SphereGeometry(this.options.hiddenNodeRadius, 16, 16);
-    const hiddenBaseMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    hiddenBaseMaterial.emissive.setRGB(0.1, 0.1, 0.1);
-    hiddenBaseMaterial.vertexColors = true;
+    // Use Lambert for hidden nodes as well to ensure robust vertexColor support across Three.js versions
+    const hiddenBaseMaterial = new THREE.MeshLambertMaterial({ vertexColors: true });
+    hiddenBaseMaterial.emissive.setRGB(0.08, 0.08, 0.08);
+    hiddenBaseMaterial.toneMapped = false;
 
     const layerCount = this.mlp.architecture.length;
     const totalWidth = (layerCount - 1) * this.options.layerSpacing;
@@ -525,12 +526,15 @@ class NeuralVisualizer {
         this.layerMeshes.push({ mesh, positions, type: "input" });
       } else {
         const material = hiddenBaseMaterial.clone();
-        material.vertexColors = true;
-        const mesh = new THREE.InstancedMesh(hiddenGeometry, material, neuronCount);
+        // Clone geometry per mesh so each InstancedMesh can have its own instanceColor attribute
+        const geometry = hiddenGeometry.clone();
+        const mesh = new THREE.InstancedMesh(geometry, material, neuronCount);
         mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(neuronCount * 3), 3);
         colorAttribute.setUsage(THREE.DynamicDrawUsage);
         mesh.instanceColor = colorAttribute;
+        // Bind attribute on geometry for compatibility with older Three.js builds
+        mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
 
         positions.forEach((position, instanceIndex) => {
           this.tempObject.position.copy(position);
@@ -590,7 +594,7 @@ class NeuralVisualizer {
 
   buildConnections() {
     const connectionRadius = this.options.connectionRadius ?? 0.02;
-    const geometry = new THREE.CylinderGeometry(connectionRadius, connectionRadius, 1, 10, 1, true);
+    const baseGeometry = new THREE.CylinderGeometry(connectionRadius, connectionRadius, 1, 10, 1, true);
     const material = new THREE.MeshLambertMaterial({
       transparent: true,
       opacity: 0.45,
@@ -602,11 +606,14 @@ class NeuralVisualizer {
       const { selected, maxAbsWeight } = this.findImportantConnections(layer);
       if (!selected.length) return;
 
-      const mesh = new THREE.InstancedMesh(geometry, material.clone(), selected.length);
+      // Clone geometry per mesh so instanceColor can be bound independently
+      const mesh = new THREE.InstancedMesh(baseGeometry.clone(), material.clone(), selected.length);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       const colorAttribute = new THREE.InstancedBufferAttribute(new Float32Array(selected.length * 3), 3);
       colorAttribute.setUsage(THREE.DynamicDrawUsage);
       mesh.instanceColor = colorAttribute;
+      // Bind attribute on geometry for compatibility with older Three.js versions
+      mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
 
       selected.forEach((connection, instanceIndex) => {
         const sourcePosition = this.layerMeshes[layerIndex].positions[connection.sourceIndex];
