@@ -424,6 +424,7 @@ class NeuralVisualizer {
         layerSpacing: 5.5,
         inputSpacing: 0.24,
         hiddenSpacing: 0.95,
+        outputSpacing: 0.95,
         inputNodeSize: 0.18,
         hiddenNodeRadius: 0.22,
         maxConnectionsPerNeuron: 24,
@@ -497,6 +498,7 @@ class NeuralVisualizer {
     this.mlp.architecture.forEach((neuronCount, layerIndex) => {
       const layerX = startX + layerIndex * this.options.layerSpacing;
       const positions = this.computeLayerPositions(layerIndex, neuronCount, layerX);
+      const isOutputLayer = layerIndex === layerCount - 1;
 
       if (layerIndex === 0) {
         const material = new THREE.MeshLambertMaterial();
@@ -538,13 +540,15 @@ class NeuralVisualizer {
         mesh.instanceMatrix.needsUpdate = true;
         mesh.instanceColor.needsUpdate = true;
         this.scene.add(mesh);
-        this.layerMeshes.push({ mesh, positions, type: "hidden" });
+        const layerType = isOutputLayer ? "output" : "hidden";
+        this.layerMeshes.push({ mesh, positions, type: layerType });
       }
     });
   }
 
   computeLayerPositions(layerIndex, neuronCount, layerX) {
     const positions = [];
+    const isOutputLayer = layerIndex === this.mlp.architecture.length - 1;
     if (layerIndex === 0) {
       const spacing = this.options.inputSpacing;
       let rows;
@@ -566,6 +570,13 @@ class NeuralVisualizer {
           positions.push(new THREE.Vector3(layerX, y, z));
           filled += 1;
         }
+      }
+    } else if (isOutputLayer) {
+      const spacing = this.options.outputSpacing ?? this.options.hiddenSpacing;
+      const height = (neuronCount - 1) * spacing;
+      for (let index = 0; index < neuronCount; index += 1) {
+        const y = height / 2 - index * spacing;
+        positions.push(new THREE.Vector3(layerX, y, 0));
       }
     } else {
       const spacing = this.options.hiddenSpacing;
