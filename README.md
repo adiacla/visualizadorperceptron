@@ -45,7 +45,7 @@ Key options:
 - `--device`: Force `mps`, `cuda`, or `cpu`. By default the script picks the best available backend.
 - `--skip-train`: Export the randomly initialised weights without running training (useful for debugging the pipeline).
 
-After training, update `CONFIG.weightUrl` in `assets/main-CKMdEyXu.js` if you export to a different location/name. Refresh the browser to load the new weights.
+After training, update `VISUALIZER_CONFIG.weightUrl` in `assets/main.js` if you export to a different location/name. Refresh the browser to load the new weights.
 
 ## Notes & Tips
 
