@@ -9,7 +9,7 @@ const VISUALIZER_CONFIG = {
   connectionRadius: 0.017,
   showFpsOverlay: true,
   brush: {
-    drawRadius: 2.0,
+    drawRadius: 1.4,
     eraseRadius: 2.5,
     drawStrength: 0.95,
     eraseStrength: 0.95,
@@ -79,9 +79,10 @@ async function initializeVisualizer() {
     // No noisy debug logs; visual updates are visible in-scene
   }
 
-  initializeAdvancedSettings(neuralScene, {
-    onLimitChange(limit) {
-      VISUALIZER_CONFIG.maxConnectionsPerNeuron = limit;
+  initializeAdvancedSettings({
+    neuralScene,
+    digitCanvas,
+    onConnectionsLimitChange() {
       refreshNetworkState();
     },
   });
@@ -130,37 +131,29 @@ function initializeInfoDialog() {
   });
 }
 
-function initializeAdvancedSettings(neuralScene, { onLimitChange } = {}) {
-  if (!neuralScene) return;
-
+function initializeAdvancedSettings({ neuralScene, digitCanvas, onConnectionsLimitChange } = {}) {
   const button = document.getElementById("advancedSettingsButton");
   const modal = document.getElementById("advancedSettingsModal");
   const closeButton = document.getElementById("closeAdvancedSettings");
-  const slider = document.getElementById("connectionLimitSlider");
-  const valueLabel = document.getElementById("connectionLimitValue");
-  if (!button || !modal || !slider || !valueLabel) return;
+  if (!button || !modal) return;
 
-  let maxIncoming = 0;
-  if (Array.isArray(neuralScene.mlp?.layers)) {
-    for (const layer of neuralScene.mlp.layers) {
-      if (!layer || !Array.isArray(layer.weights) || !layer.weights.length) continue;
-      const rowLength = layer.weights[0]?.length ?? 0;
-      if (rowLength > maxIncoming) {
-        maxIncoming = rowLength;
-      }
-    }
-  }
-  const sliderMax = Math.max(1, maxIncoming || Number.parseInt(slider.max, 10) || 64);
-  slider.max = String(sliderMax);
+  const connectionSlider = document.getElementById("connectionLimitSlider");
+  const connectionValue = document.getElementById("connectionLimitValue");
+  const thicknessSlider = document.getElementById("brushThicknessSlider");
+  const thicknessValue = document.getElementById("brushThicknessValue");
+  const strengthSlider = document.getElementById("brushStrengthSlider");
+  const strengthValue = document.getElementById("brushStrengthValue");
+
+  const focusTarget = connectionSlider || thicknessSlider || strengthSlider;
 
   const showModal = () => {
     modal.classList.add("visible");
     window.requestAnimationFrame(() => {
-      if (typeof slider.focus === "function") {
+      if (focusTarget && typeof focusTarget.focus === "function") {
         try {
-          slider.focus({ preventScroll: true });
+          focusTarget.focus({ preventScroll: true });
         } catch (_error) {
-          slider.focus();
+          focusTarget.focus();
         }
       }
     });
@@ -185,36 +178,123 @@ function initializeAdvancedSettings(neuralScene, { onLimitChange } = {}) {
     }
   });
 
-  const syncUi = (value) => {
-    const normalized = Number.isFinite(value) ? value : neuralScene.options.maxConnectionsPerNeuron;
-    slider.value = String(normalized);
-    valueLabel.textContent = `${normalized}`;
-  };
-
-  const applyLimit = (rawValue, { emit = true } = {}) => {
-    let parsed = Number.parseInt(rawValue, 10);
-    if (!Number.isFinite(parsed)) {
-      parsed = neuralScene.options.maxConnectionsPerNeuron;
+  if (connectionSlider && connectionValue && neuralScene) {
+    let maxIncoming = 0;
+    if (Array.isArray(neuralScene.mlp?.layers)) {
+      for (const layer of neuralScene.mlp.layers) {
+        if (!layer || !Array.isArray(layer.weights) || !layer.weights.length) continue;
+        const rowLength = layer.weights[0]?.length ?? 0;
+        if (rowLength > maxIncoming) {
+          maxIncoming = rowLength;
+        }
+      }
     }
-    const maxValue = Number.parseInt(slider.max, 10) || sliderMax;
-    const clamped = Math.min(maxValue, Math.max(1, parsed));
-    syncUi(clamped);
-    if (!emit) return;
-    const changed = neuralScene.setMaxConnectionsPerNeuron(clamped);
-    if (changed && typeof onLimitChange === "function") {
-      onLimitChange(clamped);
+    const sliderMax = Math.max(1, maxIncoming || Number.parseInt(connectionSlider.max, 10) || 64);
+    connectionSlider.max = String(sliderMax);
+
+    const syncConnectionUi = (value) => {
+      const normalized = Number.isFinite(value) ? value : neuralScene.options.maxConnectionsPerNeuron;
+      connectionSlider.value = String(normalized);
+      connectionValue.textContent = `${normalized}`;
+    };
+
+    const applyConnectionLimit = (rawValue, { emit = true } = {}) => {
+      let parsed = Number.parseInt(rawValue, 10);
+      if (!Number.isFinite(parsed)) {
+        parsed = neuralScene.options.maxConnectionsPerNeuron;
+      }
+      const maxValue = Number.parseInt(connectionSlider.max, 10) || sliderMax;
+      const clamped = Math.min(maxValue, Math.max(1, parsed));
+      syncConnectionUi(clamped);
+      if (!emit) return;
+      const changed = neuralScene.setMaxConnectionsPerNeuron(clamped);
+      if (changed) {
+        if (typeof onConnectionsLimitChange === "function") {
+          onConnectionsLimitChange(clamped);
+        }
+        VISUALIZER_CONFIG.maxConnectionsPerNeuron = clamped;
+      }
+    };
+
+    applyConnectionLimit(neuralScene.options.maxConnectionsPerNeuron, { emit: false });
+
+    connectionSlider.addEventListener("input", (event) => {
+      applyConnectionLimit(event.target.value);
+    });
+
+    connectionSlider.addEventListener("change", (event) => {
+      applyConnectionLimit(event.target.value);
+    });
+  } else if (connectionSlider) {
+    connectionSlider.disabled = true;
+    if (connectionValue) {
+      connectionValue.textContent = "—";
     }
-  };
+  }
 
-  applyLimit(neuralScene.options.maxConnectionsPerNeuron, { emit: false });
+  if (digitCanvas && typeof digitCanvas.getBrushSettings === "function") {
+    const brush = digitCanvas.getBrushSettings();
+    if (thicknessSlider && thicknessValue) {
+      const min = Number.parseFloat(thicknessSlider.min) || 0.1;
+      const max = Number.parseFloat(thicknessSlider.max) || 6;
+      const formatThickness = (value) => value.toFixed(1);
+      const syncThicknessUi = (value) => {
+        thicknessSlider.value = String(value);
+        thicknessValue.textContent = formatThickness(value);
+      };
+      const applyThickness = (rawValue) => {
+        let parsed = Number.parseFloat(rawValue);
+        if (!Number.isFinite(parsed)) {
+          parsed = brush.drawRadius;
+        }
+        const clamped = clamp(parsed, min, max);
+        syncThicknessUi(clamped);
+        digitCanvas.updateBrushSettings({ drawRadius: clamped });
+        VISUALIZER_CONFIG.brush.drawRadius = clamped;
+        brush.drawRadius = clamped;
+      };
+      applyThickness(brush.drawRadius);
+      thicknessSlider.addEventListener("input", (event) => {
+        applyThickness(event.target.value);
+      });
+      thicknessSlider.addEventListener("change", (event) => {
+        applyThickness(event.target.value);
+      });
+    }
 
-  slider.addEventListener("input", (event) => {
-    applyLimit(event.target.value);
-  });
-
-  slider.addEventListener("change", (event) => {
-    applyLimit(event.target.value);
-  });
+    if (strengthSlider && strengthValue) {
+      const min = Number.parseFloat(strengthSlider.min) || 0;
+      const max = Number.parseFloat(strengthSlider.max) || 1;
+      const formatStrength = (value) => `${Math.round(value * 100)}%`;
+      const syncStrengthUi = (value) => {
+        strengthSlider.value = String(value);
+        strengthValue.textContent = formatStrength(value);
+      };
+      const applyStrength = (rawValue) => {
+        let parsed = Number.parseFloat(rawValue);
+        if (!Number.isFinite(parsed)) {
+          parsed = brush.drawStrength;
+        }
+        const clamped = clamp(parsed, min, max);
+        syncStrengthUi(clamped);
+        digitCanvas.updateBrushSettings({ drawStrength: clamped });
+        VISUALIZER_CONFIG.brush.drawStrength = clamped;
+        brush.drawStrength = clamped;
+      };
+      applyStrength(brush.drawStrength);
+      strengthSlider.addEventListener("input", (event) => {
+        applyStrength(event.target.value);
+      });
+      strengthSlider.addEventListener("change", (event) => {
+        applyStrength(event.target.value);
+      });
+    }
+  } else {
+    if (thicknessSlider) thicknessSlider.disabled = true;
+    if (thicknessValue) thicknessValue.textContent = "—";
+    if (strengthSlider) strengthSlider.disabled = true;
+    if (strengthValue) strengthValue.textContent = "—";
+  }
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && modal.classList.contains("visible")) {
@@ -470,6 +550,35 @@ class DigitSketchPad {
 
   setChangeHandler(handler) {
     this.onChange = handler;
+  }
+
+  getBrushSettings() {
+    return {
+      drawRadius: this.brush.drawRadius,
+      drawStrength: this.brush.drawStrength,
+      eraseRadius: this.brush.eraseRadius,
+      eraseStrength: this.brush.eraseStrength,
+      softness: this.brush.softness,
+    };
+  }
+
+  updateBrushSettings(updates = {}) {
+    if (!updates || typeof updates !== "object") {
+      return this.getBrushSettings();
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, "drawRadius")) {
+      const radius = Number(updates.drawRadius);
+      if (Number.isFinite(radius)) {
+        this.brush.drawRadius = clamp(radius, 0.2, 10);
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, "drawStrength")) {
+      const strength = Number(updates.drawStrength);
+      if (Number.isFinite(strength)) {
+        this.brush.drawStrength = clamp(strength, 0, 1);
+      }
+    }
+    return this.getBrushSettings();
   }
 
   handlePointerDown(event) {
