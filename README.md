@@ -4,6 +4,11 @@
 
 Interactive web visualisation for a compact multi-layer perceptron trained on the MNIST handwritten digit dataset. Draw a digit, watch activations propagate through the network in 3D, and inspect real-time prediction probabilities.
 
+## WIP
+
+This is still in a rough state and under active development. If you want something useable for a museum etc check back later. I have a couple of features in mind (like being able to connect a tablet to draw a number) to make this a good educational visualisation. 
+
+
 ## Repository Layout
 
 - `index.html` / `assets/` – Static Three.js visualiser and UI assets.
@@ -12,7 +17,7 @@ Interactive web visualisation for a compact multi-layer perceptron trained on th
 
 ## Quick Start
 
-1. **Install Python dependencies** (PyTorch + torchvision):
+1. (Only for training) **Install Python dependencies** (PyTorch + torchvision):
 
    ```bash
    python3 -m pip install torch torchvision
