@@ -79,6 +79,13 @@ async function initializeVisualizer() {
     // No noisy debug logs; visual updates are visible in-scene
   }
 
+  initializeAdvancedSettings(neuralScene, {
+    onLimitChange(limit) {
+      VISUALIZER_CONFIG.maxConnectionsPerNeuron = limit;
+      refreshNetworkState();
+    },
+  });
+
   const timelineController = setupTimelineSlider(timelineSnapshots, {
     onSnapshotChange(snapshot) {
       if (!snapshot) return;
@@ -112,6 +119,105 @@ function initializeInfoDialog() {
   closeButton?.addEventListener("click", hideModal);
   infoModal.addEventListener("click", (event) => {
     if (event.target === infoModal) {
+      hideModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && infoModal.classList.contains("visible")) {
+      hideModal();
+    }
+  });
+}
+
+function initializeAdvancedSettings(neuralScene, { onLimitChange } = {}) {
+  if (!neuralScene) return;
+
+  const button = document.getElementById("advancedSettingsButton");
+  const modal = document.getElementById("advancedSettingsModal");
+  const closeButton = document.getElementById("closeAdvancedSettings");
+  const slider = document.getElementById("connectionLimitSlider");
+  const valueLabel = document.getElementById("connectionLimitValue");
+  if (!button || !modal || !slider || !valueLabel) return;
+
+  let maxIncoming = 0;
+  if (Array.isArray(neuralScene.mlp?.layers)) {
+    for (const layer of neuralScene.mlp.layers) {
+      if (!layer || !Array.isArray(layer.weights) || !layer.weights.length) continue;
+      const rowLength = layer.weights[0]?.length ?? 0;
+      if (rowLength > maxIncoming) {
+        maxIncoming = rowLength;
+      }
+    }
+  }
+  const sliderMax = Math.max(1, maxIncoming || Number.parseInt(slider.max, 10) || 64);
+  slider.max = String(sliderMax);
+
+  const showModal = () => {
+    modal.classList.add("visible");
+    window.requestAnimationFrame(() => {
+      if (typeof slider.focus === "function") {
+        try {
+          slider.focus({ preventScroll: true });
+        } catch (_error) {
+          slider.focus();
+        }
+      }
+    });
+  };
+
+  const hideModal = () => {
+    modal.classList.remove("visible");
+    if (typeof button.focus === "function") {
+      try {
+        button.focus({ preventScroll: true });
+      } catch (_error) {
+        button.focus();
+      }
+    }
+  };
+
+  button.addEventListener("click", showModal);
+  closeButton?.addEventListener("click", hideModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      hideModal();
+    }
+  });
+
+  const syncUi = (value) => {
+    const normalized = Number.isFinite(value) ? value : neuralScene.options.maxConnectionsPerNeuron;
+    slider.value = String(normalized);
+    valueLabel.textContent = `${normalized}`;
+  };
+
+  const applyLimit = (rawValue, { emit = true } = {}) => {
+    let parsed = Number.parseInt(rawValue, 10);
+    if (!Number.isFinite(parsed)) {
+      parsed = neuralScene.options.maxConnectionsPerNeuron;
+    }
+    const maxValue = Number.parseInt(slider.max, 10) || sliderMax;
+    const clamped = Math.min(maxValue, Math.max(1, parsed));
+    syncUi(clamped);
+    if (!emit) return;
+    const changed = neuralScene.setMaxConnectionsPerNeuron(clamped);
+    if (changed && typeof onLimitChange === "function") {
+      onLimitChange(clamped);
+    }
+  };
+
+  applyLimit(neuralScene.options.maxConnectionsPerNeuron, { emit: false });
+
+  slider.addEventListener("input", (event) => {
+    applyLimit(event.target.value);
+  });
+
+  slider.addEventListener("change", (event) => {
+    applyLimit(event.target.value);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && modal.classList.contains("visible")) {
       hideModal();
     }
   });
@@ -1040,6 +1146,15 @@ class NeuralVisualizer {
   updateNetworkWeights() {
     this.disposeConnectionMeshes();
     this.buildConnections();
+  }
+
+  setMaxConnectionsPerNeuron(limit) {
+    const clamped = Math.max(1, Math.floor(limit));
+    if (!Number.isFinite(clamped)) return false;
+    if (clamped === this.options.maxConnectionsPerNeuron) return false;
+    this.options.maxConnectionsPerNeuron = clamped;
+    this.updateNetworkWeights();
+    return true;
   }
 
   findImportantConnections(layer) {

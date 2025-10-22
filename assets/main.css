@@ -244,28 +244,59 @@ body > canvas {
   display: none;
 }
 
-.info-button {
+.floating-controls {
   position: absolute;
   bottom: 24px;
   right: 24px;
+  display: flex;
+  gap: 14px;
+  z-index: 11;
+}
+
+.floating-button {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: rgba(14, 23, 40, 0.85);
   border: 1px solid rgba(91, 160, 255, 0.35);
+  background: rgba(14, 23, 40, 0.85);
   color: rgba(173, 205, 255, 0.88);
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 11;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
+  padding: 0;
+  backdrop-filter: blur(14px);
 }
 
-.info-button:hover {
+.floating-button span {
+  pointer-events: none;
+  font-size: 1.1rem;
+}
+
+.floating-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 24px rgba(91, 160, 255, 0.35);
+}
+
+.info-button {
+  border-color: rgba(91, 160, 255, 0.35);
+  color: rgba(173, 205, 255, 0.88);
+}
+
+.info-button span {
+  font-size: 1.25rem;
+}
+
+.advanced-settings-button {
+  border-color: rgba(91, 160, 255, 0.45);
+  background: linear-gradient(135deg, rgba(16, 27, 48, 0.96), rgba(9, 15, 32, 0.92));
+  color: rgba(180, 205, 255, 0.9);
+}
+
+.advanced-settings-button span {
+  font-size: 1.3rem;
 }
 
 .timeline-overlay {
@@ -458,6 +489,97 @@ body > canvas {
   color: rgba(226, 235, 255, 0.88);
   line-height: 1.55;
   font-size: 0.95rem;
+}
+
+.advanced-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: rgba(5, 10, 22, 0.55);
+  backdrop-filter: blur(10px);
+  z-index: 22;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+  padding: 24px;
+}
+
+.advanced-modal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.advanced-modal-content {
+  width: min(360px, 90vw);
+  background: radial-gradient(circle at top right, rgba(30, 45, 82, 0.97), rgba(10, 16, 30, 0.95));
+  border: 1px solid rgba(91, 160, 255, 0.32);
+  border-radius: 22px;
+  padding: 22px 24px;
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.55);
+  color: #f5f7ff;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.advanced-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.advanced-modal-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: 0.03em;
+}
+
+.advanced-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.advanced-control {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.advanced-label {
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(173, 205, 255, 0.78);
+}
+
+.advanced-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#connectionLimitSlider {
+  flex: 1;
+  accent-color: #3b82f6;
+}
+
+.advanced-value {
+  min-width: 42px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: rgba(226, 235, 255, 0.92);
+}
+
+.advanced-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: rgba(198, 212, 255, 0.78);
 }
 
 .info-modal-body ul {

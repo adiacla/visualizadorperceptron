@@ -53,9 +53,26 @@
         </div>
     </div>
 
-    <!-- Info Button -->
-    <div id="infoButton" class="info-button">
-        <span>i</span>
+    <!-- Floating Controls -->
+    <div class="floating-controls">
+        <button
+            id="advancedSettingsButton"
+            class="floating-button advanced-settings-button"
+            aria-haspopup="dialog"
+            aria-controls="advancedSettingsModal"
+            type="button"
+        >
+            <span>⚙</span>
+        </button>
+        <button
+            id="infoButton"
+            class="floating-button info-button"
+            aria-haspopup="dialog"
+            aria-controls="infoModal"
+            type="button"
+        >
+            <span>i</span>
+        </button>
     </div>
 
     <!-- MNIST Sample Images - Bottom Edge -->
@@ -139,6 +156,37 @@
                 </ul>
 
                 <p>Das Netzwerk ist bewusst kompakt gehalten, um eine flüssige Echtzeitdarstellung zu gewährleisten. Sie können gern mit anderen Schichtgrößen neu trainieren – halten Sie die Architektur nur schlank, damit die 3D-Ansicht reaktionsschnell bleibt.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Settings Modal -->
+    <div id="advancedSettingsModal" class="advanced-modal" role="dialog" aria-modal="true" aria-labelledby="advancedSettingsTitle">
+        <div class="advanced-modal-content">
+            <div class="advanced-modal-header">
+                <h3 id="advancedSettingsTitle">Erweiterte Einstellungen</h3>
+                <button id="closeAdvancedSettings" class="close-modal-btn" type="button">×</button>
+            </div>
+            <div class="advanced-modal-body">
+                <div class="advanced-control">
+                    <label for="connectionLimitSlider" class="advanced-label">
+                        Maximale Verbindungen pro Neuron
+                    </label>
+                    <div class="advanced-slider">
+                        <input
+                            id="connectionLimitSlider"
+                            type="range"
+                            min="1"
+                            max="64"
+                            step="1"
+                            value="24"
+                        >
+                        <span id="connectionLimitValue" class="advanced-value">24</span>
+                    </div>
+                    <p class="advanced-hint">
+                        Steuert wie viele der stärksten eingehenden Gewichte pro Zielneuron gleichzeitig dargestellt werden; hohe Werte können die Darstellung verlangsamen.
+                    </p>
+                </div>
             </div>
         </div>
     </div>

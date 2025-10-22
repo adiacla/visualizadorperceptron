@@ -41,7 +41,7 @@ python3 training/mlp_train.py \
 Key options:
 
 - `--hidden-dims`: Hidden layer sizes (default `128 64`). Keep the network modest so the visualisation stays responsive.
-- `--epochs`: Minimum training epochs (default `5`). The script will automatically extend the run so the timeline hits the 10× dataset milestone.
+- `--epochs`: Minimum training epochs (default `5`). The script will automatically extend the run so the timeline hits the 50× dataset milestone.
 - `--batch-size`: Mini-batch size (default `128`).
 - `--device`: Force `mps`, `cuda`, or `cpu`. By default the script picks the best available backend.
 - `--skip-train`: Export the randomly initialised weights without running training (useful for debugging the pipeline).
@@ -50,7 +50,7 @@ After training, update `VISUALIZER_CONFIG.weightUrl` in `assets/main.js` if you 
 
 ### Training timeline export
 
-Every exported JSON now includes a `timeline` array capturing the network at key milestones (≈100, 1 000, 3 000, 10 000, 30 000 images plus 1×, 2×, 5×, 10× dataset passes). The slider at the bottom of the UI lets you swap between these snapshots, showing how weights, activations, and accuracy evolve from random initialisation through 10 full passes over MNIST. Re-export the weights with the updated script to generate fresh timeline data for your own runs.
+Every exported JSON now includes a `timeline` array spanning 35 checkpoints: densely spaced early snapshots (≈50, 120, 250, 500, 1k, 2k, 3.5k, 5.8k, 8.7k, 13k, 19.5k, 28.5k, 40k images), followed by dataset-multiple milestones from 1× through 50×. The slider at the bottom of the UI lets you swap between these snapshots, showing how weights, activations, and accuracy evolve from random initialisation all the way to 50 full passes over MNIST. Re-export the weights with the updated script to generate fresh timeline data for your own runs.
 
 ## Notes & Tips
 
