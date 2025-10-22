@@ -131,15 +131,15 @@ body > canvas {
 }
 
 .neuron-detail-panel {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(92vw, 960px);
-  max-height: 40vh;
+  position: fixed;
+  top: var(--neuron-panel-top, 416px);
+  left: 16px;
+  width: min(420px, calc(100vw - 32px));
+  max-height: var(--neuron-panel-max-height, calc(100vh - var(--neuron-panel-top, 416px) - 24px));
   z-index: 12;
   pointer-events: none;
   display: none;
+  transform: none;
 }
 
 .neuron-detail-panel.visible {
@@ -157,6 +157,7 @@ body > canvas {
   display: flex;
   flex-direction: column;
   max-height: 100%;
+  overflow-y: auto;
 }
 
 .neuron-detail-panel__header {

@@ -50,11 +50,13 @@ async function initializeVisualizer() {
     architecture: definition.network.architecture,
     layers: initialLayers,
   });
-  const digitCanvas = new DigitSketchPad(document.getElementById("gridContainer"), 28, 28, {
+  const gridContainerElement = document.getElementById("gridContainer");
+  const digitCanvas = new DigitSketchPad(gridContainerElement, 28, 28, {
     brush: VISUALIZER_CONFIG.brush,
   });
   const probabilityPanel = new ProbabilityPanel(document.getElementById("predictionChart"));
-  const neuronDetailPanel = new NeuronDetailPanel(document.getElementById("neuronDetailPanel"));
+  const neuronDetailPanelElement = document.getElementById("neuronDetailPanel");
+  const neuronDetailPanel = new NeuronDetailPanel(neuronDetailPanelElement);
   const neuralScene = new NeuralVisualizer(neuralModel, {
     layerSpacing: VISUALIZER_CONFIG.layerSpacing,
     maxConnectionsPerNeuron: VISUALIZER_CONFIG.maxConnectionsPerNeuron,
@@ -68,6 +70,35 @@ async function initializeVisualizer() {
     onNeuronFocusChange: (payload) => neuronDetailPanel.update(payload),
   });
   neuronDetailPanel.setOnClear(() => neuralScene.clearSelection());
+
+  if (gridContainerElement && neuronDetailPanelElement) {
+    const rootStyle = document.documentElement?.style ?? null;
+    const spacingBelowSketchPad = 16;
+    const bottomMargin = 24;
+
+    const applyNeuronPanelLayout = () => {
+      if (!rootStyle) return;
+      const gridRect = gridContainerElement.getBoundingClientRect();
+      const rawTop = Math.round(gridRect.bottom + spacingBelowSketchPad);
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+      const availableHeight = Math.max(viewportHeight - rawTop - bottomMargin, 200);
+      rootStyle.setProperty("--neuron-panel-top", `${rawTop}px`);
+      rootStyle.setProperty("--neuron-panel-max-height", `${availableHeight}px`);
+    };
+
+    const scheduleNeuronPanelLayout = () => window.requestAnimationFrame(applyNeuronPanelLayout);
+    scheduleNeuronPanelLayout();
+    window.addEventListener("resize", scheduleNeuronPanelLayout, { passive: true });
+
+    if (typeof ResizeObserver !== "undefined") {
+      if (neuronDetailPanelElement.__gridResizeObserver instanceof ResizeObserver) {
+        neuronDetailPanelElement.__gridResizeObserver.disconnect();
+      }
+      const gridResizeObserver = new ResizeObserver(() => scheduleNeuronPanelLayout());
+      gridResizeObserver.observe(gridContainerElement);
+      neuronDetailPanelElement.__gridResizeObserver = gridResizeObserver;
+    }
+  }
 
   if (typeof window !== "undefined") {
     // Expose scene instance for interactive inspection in DevTools.
@@ -1865,7 +1896,7 @@ class NeuralVisualizer {
       layer.type === "input"
         ? this.options.inputNodeSize ?? 0.18
         : this.options.hiddenNodeRadius ?? 0.22;
-    const scale = Math.max(baseSize * 9, 0.6);
+    const scale = Math.max(baseSize * 3, 0.2);
     sprite.scale.set(scale, scale, 1);
     sprite.visible = true;
   }
