@@ -1,5 +1,5 @@
 const VISUALIZER_CONFIG = {
-  weightUrl: "./exports/sample_mlp_weights.json",
+  weightUrl: "./exports/mlp_weights.json",
   maxConnectionsPerNeuron: 24,
   layerSpacing: 5.5,
   inputSpacing: 0.24,

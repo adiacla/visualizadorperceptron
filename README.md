@@ -5,7 +5,7 @@ Interactive web visualisation for a compact multi-layer perceptron trained on th
 ## Repository Layout
 
 - `index.html` / `assets/` – Static Three.js visualiser and UI assets.
-- `exports/sample_mlp_weights.json` – Default weights exported after a 1-epoch training run.
+- `exports/mlp_weights.json` – Default weights with timeline snapshots (generated from the latest training run).
 - `training/mlp_train.py` – PyTorch helper to train the MLP (with Apple Metal acceleration when available) and export weights for the front-end.
 
 ## Quick Start
@@ -56,7 +56,7 @@ Every exported JSON now includes a `timeline` array capturing the network at key
 
 - The visualiser highlights the top-N (configurable) strongest incoming connections per neuron to keep the scene legible.
 - Colors encode activation sign and magnitude (cool tones for negative/low, warm tones for strong positive contributions).
-- The default export (`exports/sample_mlp_weights.json`) comes from a quick one-epoch training run and should reach ~94% accuracy. Retrain for higher fidelity.
+- The default export (`exports/mlp_weights.json`) already includes timeline milestones from a multi-epoch training run. Retrain (and re-export) if you want to showcase a different progression.
 - If you adjust the architecture, ensure the JSON export reflects the new layer sizes; the front-end builds the scene dynamically from that metadata.
 
 ## Deployment
