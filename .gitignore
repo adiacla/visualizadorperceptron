@@ -3,3 +3,4 @@ releases/
 data/MNIST/
 .venv
 tools/mnist_assets/__pycache__/
+.DS_Store
