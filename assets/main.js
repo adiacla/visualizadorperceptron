@@ -199,6 +199,8 @@ async function initializeVisualizer() {
     brush: VISUALIZER_CONFIG.brush,
   });
   const probabilityPanel = new ProbabilityPanel(document.getElementById("predictionChart"));
+  const networkInfoPanelElement = document.getElementById("networkInfoPanel");
+  const networkInfoPanel = networkInfoPanelElement ? new NetworkInfoPanel(networkInfoPanelElement) : null;
   const neuronDetailPanelElement = document.getElementById("neuronDetailPanel");
   const neuronDetailPanel = new NeuronDetailPanel(neuronDetailPanelElement);
   const neuralScene = new NeuralVisualizer(neuralModel, {
@@ -213,6 +215,7 @@ async function initializeVisualizer() {
     showFpsOverlay: VISUALIZER_CONFIG.showFpsOverlay,
     onNeuronFocusChange: (payload) => neuronDetailPanel.update(payload),
   });
+  networkInfoPanel?.update(neuralModel);
   neuronDetailPanel.setOnClear(() => neuralScene.clearSelection());
 
   if (gridContainerElement && neuronDetailPanelElement) {
@@ -260,16 +263,33 @@ async function initializeVisualizer() {
   function refreshNetworkState() {
     const rawInput = digitCanvas.getPixels();
     const propagation = neuralModel.propagate(rawInput);
-    const activationsForVisualization = propagation.activations.slice();
-    activationsForVisualization[0] = rawInput;
-    neuralScene.update(activationsForVisualization, propagation.activations, propagation.preActivations);
+    const displayActivations = propagation.activations.slice();
+    if (displayActivations.length > 0) {
+      displayActivations[0] = rawInput;
+    }
 
     const logitsTyped =
       propagation.preActivations.length > 0
         ? propagation.preActivations[propagation.preActivations.length - 1]
         : new Float32Array(0);
-    const probabilities = softmax(Array.from(logitsTyped));
-    probabilityPanel.update(probabilities);
+    const probabilities =
+      logitsTyped.length > 0 ? Float32Array.from(softmax(Array.from(logitsTyped))) : new Float32Array(0);
+
+    if (probabilities.length && displayActivations.length > 1) {
+      displayActivations[displayActivations.length - 1] = probabilities;
+    }
+
+    let networkActivations = propagation.activations;
+    if (probabilities.length) {
+      networkActivations = propagation.activations.slice();
+      if (networkActivations.length > 1) {
+        networkActivations[networkActivations.length - 1] = probabilities;
+      }
+    }
+
+    neuralScene.update(displayActivations, networkActivations, propagation.preActivations);
+    const probabilitiesForPanel = probabilities.length ? probabilities : logitsTyped;
+    probabilityPanel.update(probabilitiesForPanel.length ? Array.from(probabilitiesForPanel) : []);
 
     // No noisy debug logs; visual updates are visible in-scene
   }
@@ -293,6 +313,7 @@ async function initializeVisualizer() {
       const layers = await snapshot.loadLayers();
       neuralModel.updateLayers(layers);
       neuralScene.updateNetworkWeights();
+      networkInfoPanel?.update(neuralModel);
       refreshNetworkState();
     },
   });
@@ -302,6 +323,7 @@ async function initializeVisualizer() {
   if (timelineController && typeof timelineController.setActiveIndex === "function") {
     await timelineController.setActiveIndex(defaultSnapshotIndex, { emit: true, force: true });
   } else {
+    networkInfoPanel?.update(neuralModel);
     refreshNetworkState();
   }
 }
@@ -1414,6 +1436,175 @@ class ProbabilityPanel {
         entry.bar.classList.remove("highest");
       }
     });
+  }
+}
+
+class NetworkInfoPanel {
+  constructor(container) {
+    this.container = container;
+    if (!this.container) {
+      throw new Error("Netzwerkinfo-Container nicht gefunden.");
+    }
+    this.numberFormatter = new Intl.NumberFormat("de-DE");
+    this.build();
+  }
+
+  build() {
+    this.container.innerHTML = "";
+    if (!this.container.classList.contains("network-info-panel")) {
+      this.container.classList.add("network-info-panel");
+    }
+    this.titleElement = document.createElement("h3");
+    this.titleElement.className = "network-info-panel__title";
+    this.titleElement.textContent = "Netzwerkübersicht";
+
+    this.summaryElement = document.createElement("div");
+    this.summaryElement.className = "network-info-panel__summary";
+
+    this.layersElement = document.createElement("div");
+    this.layersElement.className = "network-info-panel__layers";
+
+    this.emptyElement = document.createElement("div");
+    this.emptyElement.className = "network-info-panel__empty";
+    this.emptyElement.textContent = "Keine Netzwerkdaten verfügbar.";
+
+    this.container.appendChild(this.titleElement);
+    this.container.appendChild(this.summaryElement);
+    this.container.appendChild(this.layersElement);
+    this.container.appendChild(this.emptyElement);
+
+    this.summaryElement.style.display = "none";
+    this.layersElement.style.display = "none";
+    this.emptyElement.style.display = "block";
+  }
+
+  formatNumber(value) {
+    if (!Number.isFinite(value)) return "—";
+    return this.numberFormatter.format(Math.round(value));
+  }
+
+  buildMetric(label, value) {
+    const wrapper = document.createElement("span");
+    wrapper.className = "network-info-panel__metric";
+    const labelElement = document.createElement("span");
+    labelElement.className = "network-info-panel__metric-label";
+    labelElement.textContent = `${label}:`;
+    const valueElement = document.createElement("span");
+    valueElement.textContent = this.formatNumber(value);
+    wrapper.appendChild(labelElement);
+    wrapper.appendChild(valueElement);
+    return wrapper;
+  }
+
+  buildSummaryLine(label, value) {
+    const line = document.createElement("div");
+    line.className = "network-info-panel__summary-line";
+    const labelElement = document.createElement("strong");
+    labelElement.textContent = label;
+    const valueElement = document.createElement("span");
+    valueElement.textContent = this.formatNumber(value);
+    line.appendChild(labelElement);
+    line.appendChild(valueElement);
+    return line;
+  }
+
+  describeLayerName(rawName, index) {
+    if (typeof rawName === "string" && rawName.trim().length > 0) {
+      const normalized = rawName.replace(/[_-]+/g, " ").trim();
+      return normalized.length ? normalized : `Layer ${index + 1}`;
+    }
+    return `Layer ${index + 1}`;
+  }
+
+  update(model) {
+    if (!model || !Array.isArray(model.layers) || model.layers.length === 0) {
+      this.emptyElement.style.display = "block";
+      this.summaryElement.style.display = "none";
+      this.layersElement.style.display = "none";
+      return;
+    }
+
+    const architecture = Array.isArray(model.architecture) ? model.architecture : [];
+    const layerSummaries = model.layers.map((layer, index) => {
+      const archInput = architecture[index];
+      const archOutput = architecture[index + 1];
+      const weightRows = Array.isArray(layer.weights) ? layer.weights : [];
+      const inputSize =
+        typeof archInput === "number" && Number.isFinite(archInput)
+          ? archInput
+          : weightRows[0]?.length ?? 0;
+      const outputSizeCandidate =
+        typeof archOutput === "number" && Number.isFinite(archOutput)
+          ? archOutput
+          : layer.biases?.length ?? 0;
+      const outputSize = Number.isFinite(outputSizeCandidate) ? outputSizeCandidate : 0;
+
+      let weightCount = 0;
+      for (const row of weightRows) {
+        if (row && typeof row.length === "number") {
+          weightCount += row.length;
+        }
+      }
+
+      const biasArray = layer.biases;
+      const biasCount = typeof biasArray?.length === "number" ? biasArray.length : 0;
+      const parameterCount = weightCount + biasCount;
+      return {
+        index,
+        name: this.describeLayerName(layer.name, index),
+        activation: typeof layer.activation === "string" ? layer.activation : null,
+        inputSize,
+        outputSize,
+        weightCount,
+        biasCount,
+        parameterCount,
+      };
+    });
+
+    const totalParameters = layerSummaries.reduce((sum, entry) => sum + entry.parameterCount, 0);
+    this.summaryElement.innerHTML = "";
+    this.summaryElement.appendChild(this.buildSummaryLine("Gesamtparameter", totalParameters));
+    if (architecture.length > 0) {
+      const firstArchitectureValue = architecture[0];
+      const lastArchitectureValue = architecture[architecture.length - 1];
+      const inputNodes =
+        typeof firstArchitectureValue === "number" && Number.isFinite(firstArchitectureValue)
+          ? firstArchitectureValue
+          : layerSummaries[0]?.inputSize ?? 0;
+      const lastLayer = layerSummaries[layerSummaries.length - 1];
+      const outputNodes =
+        typeof lastArchitectureValue === "number" && Number.isFinite(lastArchitectureValue)
+          ? lastArchitectureValue
+          : lastLayer?.outputSize ?? 0;
+      this.summaryElement.appendChild(this.buildSummaryLine("Eingabeknoten", inputNodes));
+      this.summaryElement.appendChild(this.buildSummaryLine("Ausgabeklassen", outputNodes));
+    }
+    this.summaryElement.appendChild(this.buildSummaryLine("Layer (inkl. Ausgaben)", layerSummaries.length));
+
+    this.layersElement.innerHTML = "";
+    layerSummaries.forEach((entry) => {
+      const layerRow = document.createElement("div");
+      layerRow.className = "network-info-panel__layer";
+
+      const title = document.createElement("div");
+      title.className = "network-info-panel__layer-title";
+      const activationLabel = entry.activation ? ` (${entry.activation})` : "";
+      title.textContent = `${entry.name}${activationLabel} • ${this.formatNumber(entry.inputSize)} → ${this.formatNumber(entry.outputSize)}`;
+
+      const metrics = document.createElement("div");
+      metrics.className = "network-info-panel__layer-metrics";
+      metrics.appendChild(this.buildMetric("Gewichte", entry.weightCount));
+      metrics.appendChild(this.buildMetric("Bias", entry.biasCount));
+      metrics.appendChild(this.buildMetric("Summe", entry.parameterCount));
+
+      layerRow.appendChild(title);
+      layerRow.appendChild(metrics);
+      this.layersElement.appendChild(layerRow);
+    });
+
+    this.emptyElement.style.display = "none";
+    this.summaryElement.style.display = "";
+    this.layersElement.style.display = "";
   }
 }
 
