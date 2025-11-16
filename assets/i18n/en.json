@@ -1,0 +1,128 @@
+{
+  "pageTitle": "MNIST MLP – Inference Visualization",
+  "drawing": {
+    "title": "Draw digit",
+    "instructions": "Click and drag on the grid (right-click to erase)",
+    "mobileInstructions": "Tap and drag on the grid"
+  },
+  "controls3d": {
+    "title": "3D Controls:",
+    "instructions": "• Left button + drag = rotate • Right button + drag = pan • Scroll wheel = zoom",
+    "rotate": "Rotate",
+    "pan": "Pan",
+    "zoom": "Zoom",
+    "rotateDesktop": "Hold left mouse button and drag",
+    "panDesktop": "Hold right mouse button and drag",
+    "zoomDesktop": "Use mouse wheel",
+    "rotateMobile": "Drag with one finger",
+    "panMobile": "Move with two fingers",
+    "zoomMobile": "Pinch or spread fingers"
+  },
+  "mobile": {
+    "touchControls": "Touch Controls"
+  },
+  "predictions": {
+    "title": "Digit Probabilities"
+  },
+  "network": {
+    "overview": "Network Overview",
+    "noData": "No network data available.",
+    "totalParameters": "Total Parameters",
+    "inputNodes": "Input Nodes",
+    "outputClasses": "Output Classes",
+    "layers": "Layers (incl. Output)",
+    "weights": "Weights",
+    "bias": "Bias",
+    "total": "Total"
+  },
+  "neuronDetail": {
+    "clearSelection": "Clear selection",
+    "incomingContributions": "Incoming Contributions",
+    "outgoingContributions": "Outgoing Contributions",
+    "source": "Source",
+    "target": "Target",
+    "input": "Input",
+    "weight": "Weight",
+    "product": "Product",
+    "activation": "Activation (Target)",
+    "contribution": "Contribution",
+    "noIncomingConnections": "No incoming connections for this layer.",
+    "inputLayerSize": "Input Layer Size:",
+    "outputLayerSize": "Output Layer Size:"
+  },
+  "timeline": {
+    "title": "Training Progress",
+    "ariaLabel": "Training Progress"
+  },
+  "infoModal": {
+    "title": "MNIST Digit Classification – Inference Visualization",
+    "subtitle": "Interactive Neural Network Visualization",
+    "description": "This application shows a compact Multi-Layer Perceptron (MLP) trained on MNIST. Draw a digit and observe how activations propagate in real-time through all fully connected layers.",
+    "howItWorks": "How it works:",
+    "howItWorksDrawing": "Click and drag in the 2D grid (top left) to sketch a digit",
+    "howItWorksObserving": "Track how your sketch travels through the network layers in 3D space",
+    "howItWorksPrediction": "Check the probability for each digit (0–9) in the chart (top right)",
+    "networkArchitecture": "Network Architecture (Default Export):",
+    "inputLayer": "Input Layer:",
+    "inputLayerDesc": "28×28 pixel grid (your drawing)",
+    "denseLayer": "Dense Layer",
+    "denseLayerDesc": "neurons with ReLU",
+    "outputLayer": "Output Layer:",
+    "outputLayerDesc": "32 → 10 logits → Softmax probabilities",
+    "colorCoding": "Color Coding:",
+    "colorCodingNodes": "The color shows activation strength (dark blue tones for low/negative values, vibrant coral colors for strong positive activations)",
+    "colorCodingConnections": "Warm colors indicate strong positive contributions, cool tones negative influences, muted lines near zero.",
+    "training": "Training Your Own Model:",
+    "trainingStep1": "Run <code>python training/mlp_train.py</code> to train the MLP (including Apple Metal acceleration, if available).",
+    "trainingStep2": "The script writes <code>exports/mlp_weights.json</code>, which the visualizer reads on load.",
+    "trainingStep3": "Change the number of hidden neurons, epochs, or export paths via the CLI options documented in <code>training/mlp_train.py</code>.",
+    "realtimeFeatures": "Real-time Features:",
+    "realtimeActivations": "Layer Activations: Sphere instances show activations per neuron with color-coded strength.",
+    "realtimeConnections": "Important Connections: Each target neuron highlights its strongest input weights for better readability.",
+    "realtimeProbabilities": "Live Probabilities: The bar chart updates logits → Softmax values in real-time.",
+    "note": "The network is intentionally kept compact to ensure smooth real-time rendering. Feel free to retrain with different layer sizes – just keep the architecture lean so the 3D view remains responsive."
+  },
+  "advancedSettings": {
+    "title": "Advanced Settings",
+    "maxConnections": "Maximum Connections per Neuron",
+    "maxConnectionsHint": "Controls how many of the strongest incoming weights per target neuron are displayed simultaneously; high values may slow down rendering.",
+    "hideWeakConnections": "Hide Weak Connections",
+    "hideWeakConnectionsHint": "Hides connections with low absolute weight; 0 shows all connections.",
+    "connectionThickness": "Connection Thickness",
+    "connectionThicknessHint": "Adjusts the radius of connection cylinders; higher values make all lines visibly thicker.",
+    "brushThickness": "Brush Thickness",
+    "brushThicknessHint": "Smaller values create finer lines; larger values fill the grid faster.",
+    "brushStrength": "Brush Strength",
+    "brushStrengthHint": "Determines how much a brush stroke increases pixel brightness."
+  },
+  "errors": {
+    "initializationFailed": "Visualization could not be initialized. See console for details.",
+    "loadMnistManifest": "Could not load MNIST manifest",
+    "invalidManifest": "Manifest does not contain valid file paths for images or labels.",
+    "loadMnistImages": "Could not load MNIST image data",
+    "loadMnistLabels": "Could not load MNIST label data",
+    "inferSampleSize": "Could not infer sample size from MNIST image data.",
+    "labelMismatch": "Number of labels does not match inferred samples.",
+    "invalidManifestSize": "Manifest does not contain a valid sample size.",
+    "imageDataMismatch": "MNIST image data length does not match expected size.",
+    "labelDataMismatch": "MNIST label data length does not match expected size.",
+    "invalidNetworkDefinition": "Invalid network definition.",
+    "noTimelineSnapshots": "No valid timeline snapshots found.",
+    "loadNetworkWeights": "Network weights could not be loaded",
+    "base64Unavailable": "Base64 decoding is not available in this environment.",
+    "invalidFloat16Length": "Float16 data has invalid length.",
+    "invalidFloat16Count": "Expected {expected} Float16 values, but got {actual}.",
+    "loadSnapshot": "Snapshot could not be loaded",
+    "invalidSnapshot": "Snapshot file does not contain valid layer data",
+    "gridContainerNotFound": "Grid container not found",
+    "invalidPixelValues": "Invalid pixel values for drawing pad"
+  },
+  "aria": {
+    "loadRandom": "Load random {digit}"
+  },
+  "fps": {
+    "idle": "idle",
+    "fps": "fps"
+  }
+}
+

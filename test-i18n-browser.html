@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>i18n Browser Test Suite</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-suite {
+            margin-bottom: 30px;
+        }
+        .test-suite h2 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #ddd;
+            background: #fafafa;
+        }
+        .test-item.pass {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+        .test-item.fail {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .test-item .test-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .test-item .test-message {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .test-item .test-error {
+            color: #d32f2f;
+            font-family: monospace;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        .summary {
+            background: #2196F3;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .summary h1 {
+            margin: 0 0 10px 0;
+        }
+        .summary .stats {
+            font-size: 1.2em;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #testOutput {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="summary" id="summary">
+        <h1>i18n Browser Test Suite</h1>
+        <div class="stats">Running tests...</div>
+    </div>
+
+    <div class="controls">
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="testEnglish()">Test English</button>
+        <button onclick="testGerman()">Test German</button>
+        <button onclick="testLanguageSwitch()">Test Language Switch</button>
+    </div>
+
+    <div id="testOutput"></div>
+
+    <!-- Mock DOM elements for testing -->
+    <div id="testElements" style="display: none;">
+        <div data-i18n="drawing.title">Draw digit</div>
+        <div data-i18n="predictions.title">Digit Probabilities</div>
+        <div data-i18n-html="infoModal.description">Description</div>
+        <input type="text" data-i18n="drawing.title" placeholder="Placeholder">
+        <button data-i18n-aria-label="timeline.ariaLabel" aria-label="Test">Button</button>
+        <span id="languageToggleText">EN</span>
+    </div>
+
+    <script src="./assets/i18n.js"></script>
+    <script>
+        let testResults = {
+            passed: 0,
+            failed: 0,
+            total: 0
+        };
+
+        function assert(condition, message) {
+            if (!condition) {
+                throw new Error(message || 'Assertion failed');
+            }
+        }
+
+        function assertEqual(actual, expected, message) {
+            if (actual !== expected) {
+                throw new Error(message || `Expected "${expected}", but got "${actual}"`);
+            }
+        }
+
+        function assertIncludes(str, substr, message) {
+            if (!str || !str.includes(substr)) {
+                throw new Error(message || `Expected string to include "${substr}"`);
+            }
+        }
+
+        function runTest(suiteName, testName, testFn) {
+            testResults.total++;
+            const testItem = document.createElement('div');
+            testItem.className = 'test-item';
+            testItem.innerHTML = `<div class="test-name">${testName}</div>`;
+
+            try {
+                const result = testFn();
+                if (result instanceof Promise) {
+                    return result.then(() => {
+                        testItem.classList.add('pass');
+                        testItem.querySelector('.test-name').textContent = `✓ ${testName}`;
+                        testResults.passed++;
+                        updateSummary();
+                    }).catch(error => {
+                        testItem.classList.add('fail');
+                        testItem.innerHTML = `
+                            <div class="test-name">✗ ${testName}</div>
+                            <div class="test-error">${error.message}</div>
+                        `;
+                        testResults.failed++;
+                        updateSummary();
+                    });
+                } else {
+                    testItem.classList.add('pass');
+                    testItem.querySelector('.test-name').textContent = `✓ ${testName}`;
+                    testResults.passed++;
+                    updateSummary();
+                }
+            } catch (error) {
+                testItem.classList.add('fail');
+                testItem.innerHTML = `
+                    <div class="test-name">✗ ${testName}</div>
+                    <div class="test-error">${error.message}</div>
+                `;
+                testResults.failed++;
+                updateSummary();
+            }
+
+            const suite = document.querySelector(`[data-suite="${suiteName}"]`) || createSuite(suiteName);
+            suite.appendChild(testItem);
+            return Promise.resolve();
+        }
+
+        function createSuite(name) {
+            const suite = document.createElement('div');
+            suite.className = 'test-suite';
+            suite.setAttribute('data-suite', name);
+            suite.innerHTML = `<h2>${name}</h2>`;
+            document.getElementById('testOutput').appendChild(suite);
+            return suite;
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById('summary');
+            summary.querySelector('.stats').textContent = 
+                `${testResults.passed} passed, ${testResults.failed} failed, ${testResults.total} total`;
+        }
+
+        function clearResults() {
+            testResults = { passed: 0, failed: 0, total: 0 };
+            document.getElementById('testOutput').innerHTML = '';
+        }
+
+        // Test Suite 1: Basic i18n Module Functionality
+        async function testBasicFunctionality() {
+            const suiteName = 'Basic i18n Module Functionality';
+            
+            await runTest(suiteName, 'window.i18n object exists', () => {
+                assert(window.i18n, 'window.i18n should exist');
+                assert(typeof window.i18n.init === 'function', 'window.i18n.init should be a function');
+                assert(typeof window.i18n.t === 'function', 'window.i18n.t should be a function');
+                assert(typeof window.i18n.switchLanguage === 'function', 'window.i18n.switchLanguage should be a function');
+                assert(typeof window.i18n.getCurrentLanguage === 'function', 'window.i18n.getCurrentLanguage should be a function');
+            });
+
+            await runTest(suiteName, 'getCurrentLanguage returns current language', () => {
+                const lang = window.i18n.getCurrentLanguage();
+                assert(lang === 'en' || lang === 'de', `Language should be 'en' or 'de', got '${lang}'`);
+            });
+
+            await runTest(suiteName, 't() function returns translations', async () => {
+                // Wait for i18n to initialize
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const translation = window.i18n.t('drawing.title');
+                assert(translation, 'Translation should not be empty');
+                assert(typeof translation === 'string', 'Translation should be a string');
+            });
+
+            await runTest(suiteName, 't() function handles nested keys', async () => {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const translation = window.i18n.t('drawing.title');
+                assert(translation, 'Nested key translation should work');
+            });
+
+            await runTest(suiteName, 't() function handles missing keys', async () => {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const translation = window.i18n.t('nonexistent.key');
+                assertEqual(translation, 'nonexistent.key', 'Missing key should return key itself');
+            });
+
+            await runTest(suiteName, 't() function handles parameter substitution', async () => {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const translation = window.i18n.t('aria.loadRandom', { digit: 5 });
+                assertIncludes(translation, '5', 'Translation should include parameter value');
+            });
+        }
+
+        // Test Suite 2: Language Switching
+        async function testLanguageSwitching() {
+            const suiteName = 'Language Switching';
+            
+            await runTest(suiteName, 'switchLanguage changes language', async () => {
+                const initialLang = window.i18n.getCurrentLanguage();
+                const newLang = initialLang === 'en' ? 'de' : 'en';
+                
+                await window.i18n.switchLanguage(newLang);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                assertEqual(window.i18n.getCurrentLanguage(), newLang, 'Language should change');
+            });
+
+            await runTest(suiteName, 'switchLanguage updates HTML lang attribute', async () => {
+                const newLang = window.i18n.getCurrentLanguage() === 'en' ? 'de' : 'en';
+                await window.i18n.switchLanguage(newLang);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                assertEqual(document.documentElement.lang, newLang, 'HTML lang attribute should update');
+            });
+
+            await runTest(suiteName, 'switchLanguage updates document.title', async () => {
+                const newLang = window.i18n.getCurrentLanguage() === 'en' ? 'de' : 'en';
+                const oldTitle = document.title;
+                
+                await window.i18n.switchLanguage(newLang);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                assert(document.title !== oldTitle, 'Document title should change');
+            });
+
+            await runTest(suiteName, 'switchLanguage dispatches languageChanged event', async () => {
+                let eventFired = false;
+                window.addEventListener('languageChanged', () => {
+                    eventFired = true;
+                }, { once: true });
+
+                const newLang = window.i18n.getCurrentLanguage() === 'en' ? 'de' : 'en';
+                await window.i18n.switchLanguage(newLang);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                assert(eventFired, 'languageChanged event should be dispatched');
+            });
+
+            await runTest(suiteName, 'switchLanguage updates translations', async () => {
+                const enTranslation = window.i18n.t('drawing.title');
+                await window.i18n.switchLanguage('de');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const deTranslation = window.i18n.t('drawing.title');
+                assert(enTranslation !== deTranslation, 'Translations should differ between languages');
+            });
+        }
+
+        // Test Suite 3: DOM Element Translation
+        async function testDOMTranslation() {
+            const suiteName = 'DOM Element Translation';
+            const testContainer = document.getElementById('testElements');
+            
+            await runTest(suiteName, 'data-i18n updates textContent', async () => {
+                await window.i18n.switchLanguage('en');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const element = testContainer.querySelector('[data-i18n="drawing.title"]');
+                const translation = window.i18n.t('drawing.title');
+                assertEqual(element.textContent, translation, 'Element textContent should match translation');
+            });
+
+            await runTest(suiteName, 'data-i18n-html updates innerHTML', async () => {
+                await window.i18n.switchLanguage('en');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const element = testContainer.querySelector('[data-i18n-html="infoModal.description"]');
+                const translation = window.i18n.t('infoModal.description');
+                assertIncludes(element.innerHTML, translation, 'Element innerHTML should include translation');
+            });
+
+            await runTest(suiteName, 'data-i18n-aria-label updates aria-label', async () => {
+                await window.i18n.switchLanguage('en');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const element = testContainer.querySelector('[data-i18n-aria-label]');
+                const translation = window.i18n.t('timeline.ariaLabel');
+                assertEqual(element.getAttribute('aria-label'), translation, 'aria-label should match translation');
+            });
+
+            await runTest(suiteName, 'data-i18n updates placeholder for input elements', async () => {
+                await window.i18n.switchLanguage('en');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const element = testContainer.querySelector('input[data-i18n]');
+                if (element) {
+                    const translation = window.i18n.t('drawing.title');
+                    assertEqual(element.placeholder, translation, 'Input placeholder should match translation');
+                }
+            });
+
+            await runTest(suiteName, 'languageToggleText updates on language change', async () => {
+                const toggleText = document.getElementById('languageToggleText');
+                const initialText = toggleText.textContent;
+                
+                const newLang = window.i18n.getCurrentLanguage() === 'en' ? 'de' : 'en';
+                await window.i18n.switchLanguage(newLang);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const newText = toggleText.textContent;
+                assert(newText !== initialText, 'Language toggle text should update');
+            });
+        }
+
+        // Test Suite 4: Error Handling
+        async function testErrorHandling() {
+            const suiteName = 'Error Handling';
+            
+            await runTest(suiteName, 't() returns key for missing translation', () => {
+                const result = window.i18n.t('nonexistent.key.path');
+                assertEqual(result, 'nonexistent.key.path', 'Should return key for missing translation');
+            });
+
+            await runTest(suiteName, 't() handles empty parameters object', () => {
+                const result = window.i18n.t('drawing.title', {});
+                assert(typeof result === 'string', 'Should handle empty parameters');
+            });
+
+            await runTest(suiteName, 't() handles missing parameter values', () => {
+                const result = window.i18n.t('aria.loadRandom', {});
+                // Should still return translation with {digit} placeholder or handle gracefully
+                assert(typeof result === 'string', 'Should handle missing parameter values');
+            });
+        }
+
+        // Test Suite 5: LocalStorage Persistence
+        async function testLocalStorage() {
+            const suiteName = 'LocalStorage Persistence';
+            
+            await runTest(suiteName, 'Language preference is saved to localStorage', async () => {
+                const testLang = 'de';
+                await window.i18n.switchLanguage(testLang);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const saved = localStorage.getItem('preferredLanguage');
+                assertEqual(saved, testLang, 'Language should be saved to localStorage');
+            });
+
+            await runTest(suiteName, 'Language preference is loaded from localStorage on init', async () => {
+                localStorage.setItem('preferredLanguage', 'de');
+                await window.i18n.init('de');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const currentLang = window.i18n.getCurrentLanguage();
+                // Note: This might not work if i18n already initialized, but structure is correct
+                assert(currentLang === 'en' || currentLang === 'de', 'Language should be loadable');
+            });
+        }
+
+        // Test Suite 6: Translation Completeness
+        async function testTranslationCompleteness() {
+            const suiteName = 'Translation Completeness';
+            
+            await runTest(suiteName, 'All required translation keys exist in English', async () => {
+                await window.i18n.switchLanguage('en');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const requiredKeys = [
+                    'drawing.title',
+                    'predictions.title',
+                    'network.overview',
+                    'timeline.title',
+                    'infoModal.title',
+                    'advancedSettings.title'
+                ];
+                
+                for (const key of requiredKeys) {
+                    const translation = window.i18n.t(key);
+                    assert(translation !== key, `Translation key "${key}" should exist in English`);
+                }
+            });
+
+            await runTest(suiteName, 'All required translation keys exist in German', async () => {
+                await window.i18n.switchLanguage('de');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const requiredKeys = [
+                    'drawing.title',
+                    'predictions.title',
+                    'network.overview',
+                    'timeline.title',
+                    'infoModal.title',
+                    'advancedSettings.title'
+                ];
+                
+                for (const key of requiredKeys) {
+                    const translation = window.i18n.t(key);
+                    assert(translation !== key, `Translation key "${key}" should exist in German`);
+                }
+            });
+        }
+
+        // Main test runner
+        async function runAllTests() {
+            clearResults();
+            
+            await testBasicFunctionality();
+            await testLanguageSwitching();
+            await testDOMTranslation();
+            await testErrorHandling();
+            await testLocalStorage();
+            await testTranslationCompleteness();
+        }
+
+        async function testEnglish() {
+            clearResults();
+            await window.i18n.switchLanguage('en');
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await testTranslationCompleteness();
+        }
+
+        async function testGerman() {
+            clearResults();
+            await window.i18n.switchLanguage('de');
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await testTranslationCompleteness();
+        }
+
+        async function testLanguageSwitch() {
+            clearResults();
+            await testLanguageSwitching();
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                runAllTests();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
+

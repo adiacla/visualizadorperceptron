@@ -1,0 +1,128 @@
+{
+  "pageTitle": "MNIST MLP – Visualisierung der Inferenz",
+  "drawing": {
+    "title": "Ziffer zeichnen",
+    "instructions": "Auf dem Raster klicken und ziehen (Rechtsklick zum Löschen)",
+    "mobileInstructions": "Tippen und auf dem Raster ziehen"
+  },
+  "controls3d": {
+    "title": "3D-Steuerung:",
+    "instructions": "• Linke Taste + ziehen = drehen • Rechte Taste + ziehen = verschieben • Scrollrad = zoomen",
+    "rotate": "Drehen",
+    "pan": "Verschieben",
+    "zoom": "Zoomen",
+    "rotateDesktop": "Linke Maustaste gedrückt halten und ziehen",
+    "panDesktop": "Rechte Maustaste gedrückt halten und ziehen",
+    "zoomDesktop": "Mausrad benutzen",
+    "rotateMobile": "Mit einem Finger ziehen",
+    "panMobile": "Mit zwei Fingern bewegen",
+    "zoomMobile": "Finger zusammenziehen oder spreizen"
+  },
+  "mobile": {
+    "touchControls": "Touch-Steuerung"
+  },
+  "predictions": {
+    "title": "Wahrscheinlichkeiten der Ziffern"
+  },
+  "network": {
+    "overview": "Netzwerk-Übersicht",
+    "noData": "Keine Netzwerkdaten verfügbar.",
+    "totalParameters": "Gesamtparameter",
+    "inputNodes": "Eingabeknoten",
+    "outputClasses": "Ausgabeklassen",
+    "layers": "Ebenen (inkl. Ausgabe)",
+    "weights": "Gewichte",
+    "bias": "Bias",
+    "total": "Gesamt"
+  },
+  "neuronDetail": {
+    "clearSelection": "Auswahl löschen",
+    "incomingContributions": "Eingehende Beiträge",
+    "outgoingContributions": "Ausgehende Beiträge",
+    "source": "Quelle",
+    "target": "Ziel",
+    "input": "Eingabe",
+    "weight": "Gewicht",
+    "product": "Produkt",
+    "activation": "Aktivierung (Ziel)",
+    "contribution": "Beitrag",
+    "noIncomingConnections": "Keine eingehenden Verbindungen für diese Ebene.",
+    "inputLayerSize": "Eingabeebenen-Größe:",
+    "outputLayerSize": "Ausgabeebenen-Größe:"
+  },
+  "timeline": {
+    "title": "Trainingsfortschritt",
+    "ariaLabel": "Trainingsfortschritt"
+  },
+  "infoModal": {
+    "title": "MNIST-Ziffernklassifizierung – Visualisierung der Inferenz",
+    "subtitle": "Interaktive Visualisierung eines neuronalen Netzes",
+    "description": "Diese Anwendung zeigt ein kompaktes Multi-Layer-Perceptron (MLP), das auf MNIST trainiert wurde. Zeichnen Sie eine Ziffer und beobachten Sie, wie die Aktivierungen in Echtzeit durch alle vollvernetzten Schichten propagieren.",
+    "howItWorks": "So funktioniert es:",
+    "howItWorksDrawing": "Im 2D-Raster (links oben) klicken und ziehen, um eine Ziffer zu skizzieren",
+    "howItWorksObserving": "Verfolgen Sie, wie Ihre Skizze durch die Schichten des Netzes im 3D-Raum wandert",
+    "howItWorksPrediction": "Prüfen Sie die Wahrscheinlichkeit für jede Ziffer (0–9) im Diagramm (rechts oben)",
+    "networkArchitecture": "Netzarchitektur (Standardexport):",
+    "inputLayer": "Eingabeschicht:",
+    "inputLayerDesc": "28×28 Pixelraster (Ihre Zeichnung)",
+    "denseLayer": "Dichte Ebene",
+    "denseLayerDesc": "Neuronen mit ReLU",
+    "outputLayer": "Ausgabeschicht:",
+    "outputLayerDesc": "32 → 10 Logits → Softmax-Wahrscheinlichkeiten",
+    "colorCoding": "Farbcodierung:",
+    "colorCodingNodes": "Die Farbe zeigt die Aktivierungsstärke (dunkle Blautöne für niedrige/negative Werte, kräftige Korallenfarben für starke positive Aktivierungen)",
+    "colorCodingConnections": "Warme Farben kennzeichnen starke positive Beiträge, kühle Töne negative Einflüsse, gedämpfte Linien nahezu Null.",
+    "training": "Eigenes Modell trainieren:",
+    "trainingStep1": "<code>python training/mlp_train.py</code> starten, um das MLP zu trainieren (inkl. Apple-Metal-Beschleunigung, falls verfügbar).",
+    "trainingStep2": "Das Skript schreibt <code>exports/mlp_weights.json</code>, das der Visualisierer beim Laden einliest.",
+    "trainingStep3": "Anzahl versteckter Neuronen, Epochen oder Exportpfade über die in <code>training/mlp_train.py</code> dokumentierten CLI-Optionen verändern.",
+    "realtimeFeatures": "Echtzeitfunktionen:",
+    "realtimeActivations": "Schichtaktivierungen: Instanzen von Kugeln zeigen Aktivierungen pro Neuron mit farbcodierter Stärke.",
+    "realtimeConnections": "Wichtige Verbindungen: Jedes Zielneuron hebt seine stärksten Eingangsgewichte für bessere Lesbarkeit hervor.",
+    "realtimeProbabilities": "Live-Wahrscheinlichkeiten: Das Balkendiagramm aktualisiert die Logits → Softmax-Werte in Echtzeit.",
+    "note": "Das Netzwerk ist bewusst kompakt gehalten, um eine flüssige Echtzeitdarstellung zu gewährleisten. Sie können gern mit anderen Schichtgrößen neu trainieren – halten Sie die Architektur nur schlank, damit die 3D-Ansicht reaktionsschnell bleibt."
+  },
+  "advancedSettings": {
+    "title": "Erweiterte Einstellungen",
+    "maxConnections": "Maximale Verbindungen pro Neuron",
+    "maxConnectionsHint": "Steuert, wie viele der stärksten eingehenden Gewichte pro Zielneuron gleichzeitig angezeigt werden; hohe Werte können die Darstellung verlangsamen.",
+    "hideWeakConnections": "Schwache Verbindungen ausblenden",
+    "hideWeakConnectionsHint": "Blendet Verbindungen mit niedrigem absoluten Gewicht aus; 0 zeigt alle Verbindungen.",
+    "connectionThickness": "Verbindungsstärke",
+    "connectionThicknessHint": "Passt den Radius der Verbindungszylinder an; höhere Werte machen alle Linien sichtbar dicker.",
+    "brushThickness": "Pinselstärke",
+    "brushThicknessHint": "Kleinere Werte erzeugen feinere Linien; größere Werte füllen das Raster schneller.",
+    "brushStrength": "Pinselstärke",
+    "brushStrengthHint": "Bestimmt, wie stark ein Pinselstrich die Pixelhelligkeit erhöht."
+  },
+  "errors": {
+    "initializationFailed": "Visualisierung konnte nicht initialisiert werden. Details in der Konsole.",
+    "loadMnistManifest": "MNIST-Manifest konnte nicht geladen werden",
+    "invalidManifest": "Manifest enthält keine gültigen Dateipfade für Bilder oder Beschriftungen.",
+    "loadMnistImages": "MNIST-Bilddaten konnten nicht geladen werden",
+    "loadMnistLabels": "MNIST-Beschriftungsdaten konnten nicht geladen werden",
+    "inferSampleSize": "Probengröße konnte nicht aus MNIST-Bilddaten abgeleitet werden.",
+    "labelMismatch": "Anzahl der Beschriftungen stimmt nicht mit abgeleiteten Proben überein.",
+    "invalidManifestSize": "Manifest enthält keine gültige Probengröße.",
+    "imageDataMismatch": "Länge der MNIST-Bilddaten stimmt nicht mit erwarteter Größe überein.",
+    "labelDataMismatch": "Länge der MNIST-Beschriftungsdaten stimmt nicht mit erwarteter Größe überein.",
+    "invalidNetworkDefinition": "Ungültige Netzwerkdefinition.",
+    "noTimelineSnapshots": "Keine gültigen Timeline-Snapshots gefunden.",
+    "loadNetworkWeights": "Netzwerkgewichte konnten nicht geladen werden",
+    "base64Unavailable": "Base64-Decodierung ist in dieser Umgebung nicht verfügbar.",
+    "invalidFloat16Length": "Float16-Daten haben ungültige Länge.",
+    "invalidFloat16Count": "Erwartet {expected} Float16-Werte, aber {actual} erhalten.",
+    "loadSnapshot": "Snapshot konnte nicht geladen werden",
+    "invalidSnapshot": "Snapshot-Datei enthält keine gültigen Ebenendaten",
+    "gridContainerNotFound": "Raster-Container nicht gefunden",
+    "invalidPixelValues": "Ungültige Pixelwerte für Zeichenfläche"
+  },
+  "aria": {
+    "loadRandom": "Zufällige {digit} laden"
+  },
+  "fps": {
+    "idle": "inaktiv",
+    "fps": "fps"
+  }
+}
+

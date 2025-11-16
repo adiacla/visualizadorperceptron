@@ -20,10 +20,18 @@ const VISUALIZER_CONFIG = {
 
 const MNIST_SAMPLE_MANIFEST_URL = "./assets/data/mnist-test-manifest.json";
 
+// i18n helper function
+function t(key, params) {
+  if (window.i18n && typeof window.i18n.t === 'function') {
+    return window.i18n.t(key, params);
+  }
+  return key;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initializeVisualizer().catch((error) => {
     console.error(error);
-    renderErrorMessage("Visualisierung konnte nicht initialisiert werden. Details finden Sie in der Konsole.");
+    renderErrorMessage(t("errors.initializationFailed"));
   });
 });
 
@@ -31,7 +39,7 @@ async function loadMnistTestSamples(manifestPath = MNIST_SAMPLE_MANIFEST_URL) {
   const manifestUrl = new URL(manifestPath, window.location.href);
   const manifestResponse = await fetch(manifestUrl.toString());
   if (!manifestResponse.ok) {
-    throw new Error(`Konnte MNIST-Manifest nicht laden (${manifestResponse.status}).`);
+    throw new Error(`Could not load MNIST manifest (${manifestResponse.status}).`);
   }
   const manifest = await manifestResponse.json();
   const rows = Number(manifest?.imageShape?.[0]) || 28;
@@ -41,19 +49,19 @@ async function loadMnistTestSamples(manifestPath = MNIST_SAMPLE_MANIFEST_URL) {
   const imageFile = manifest?.image?.file;
   const labelFile = manifest?.labels?.file;
   if (!imageFile || !labelFile) {
-    throw new Error("Manifest enthält keine gültigen Dateipfade für Bilder oder Labels.");
+    throw new Error("Manifest does not contain valid file paths for images or labels.");
   }
 
   const [imageBuffer, labelBuffer] = await Promise.all([
     fetch(new URL(imageFile, manifestUrl).toString()).then((response) => {
       if (!response.ok) {
-        throw new Error(`Konnte MNIST-Bilddaten nicht laden (${response.status}).`);
+        throw new Error(`Could not load MNIST image data (${response.status}).`);
       }
       return response.arrayBuffer();
     }),
     fetch(new URL(labelFile, manifestUrl).toString()).then((response) => {
       if (!response.ok) {
-        throw new Error(`Konnte MNIST-Labeldaten nicht laden (${response.status}).`);
+        throw new Error(`Could not load MNIST label data (${response.status}).`);
       }
       return response.arrayBuffer();
     }),
@@ -65,22 +73,22 @@ async function loadMnistTestSamples(manifestPath = MNIST_SAMPLE_MANIFEST_URL) {
     if (sampleSize > 0) {
       const inferredSamples = Math.floor(imageBytes.length / sampleSize);
       if (inferredSamples <= 0) {
-        throw new Error("Aus den MNIST-Bilddaten konnte keine Stichprobengröße abgeleitet werden.");
+        throw new Error("Could not infer sample size from MNIST image data.");
       }
       if (labelBytes.length !== inferredSamples) {
-        throw new Error("Anzahl der Labels stimmt nicht mit den abgeleiteten Stichproben überein.");
+        throw new Error("Number of labels does not match inferred samples.");
       }
     } else {
-      throw new Error("Manifest enthält keine gültige Stichprobengröße.");
+      throw new Error("Manifest does not contain a valid sample size.");
     }
   }
 
   const totalSamples = numSamples > 0 ? numSamples : Math.floor(imageBytes.length / sampleSize);
   if (imageBytes.length !== totalSamples * sampleSize) {
-    throw new Error("MNIST-Bilddatenlänge stimmt nicht mit der erwarteten Größe überein.");
+    throw new Error("MNIST image data length does not match expected size.");
   }
   if (labelBytes.length !== totalSamples) {
-    throw new Error("MNIST-Labeldatenlänge stimmt nicht mit der erwarteten Größe überein.");
+    throw new Error("MNIST label data length does not match expected size.");
   }
 
   const digitBuckets = Array.from({ length: 10 }, () => []);
@@ -141,7 +149,7 @@ async function setupMnistSampleButtons({ digitCanvas, onSampleApplied, manifestP
   try {
     loader = await loadMnistTestSamples(manifestPath ?? MNIST_SAMPLE_MANIFEST_URL);
   } catch (error) {
-    console.warn("MNIST-Testdaten konnten nicht geladen werden:", error);
+    console.warn("MNIST test data could not be loaded:", error);
     return null;
   }
   const column = document.createElement("div");
@@ -151,7 +159,7 @@ async function setupMnistSampleButtons({ digitCanvas, onSampleApplied, manifestP
     button.type = "button";
     button.className = "digit-button";
     button.textContent = String(digit);
-    button.setAttribute("aria-label", `Zufällige ${digit} laden`);
+    button.setAttribute("aria-label", t("aria.loadRandom", { digit }));
     button.addEventListener("click", () => {
       const sample = loader.getRandomSample(digit);
       if (!sample) return;
@@ -175,7 +183,7 @@ async function initializeVisualizer() {
   const weightDefinitionUrl = new URL(VISUALIZER_CONFIG.weightUrl, window.location.href);
   const definition = await fetchNetworkDefinition(weightDefinitionUrl.toString());
   if (!definition?.network) {
-    throw new Error("Ungültige Netzwerkdefinition.");
+    throw new Error("Invalid network definition.");
   }
 
   const timelineSnapshots = hydrateTimeline(definition.timeline, {
@@ -183,7 +191,7 @@ async function initializeVisualizer() {
     baseUrl: weightDefinitionUrl,
   });
   if (!timelineSnapshots.length) {
-    throw new Error("Keine gültigen Timeline-Snapshots gefunden.");
+    throw new Error("No valid timeline snapshots found.");
   }
   const defaultSnapshotIndex = Math.max(timelineSnapshots.length - 1, 0);
   const initialSnapshot = timelineSnapshots[defaultSnapshotIndex];
@@ -664,7 +672,7 @@ function initializeAdvancedSettings({ neuralScene, digitCanvas, onConnectionsSet
 async function fetchNetworkDefinition(url) {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
-    throw new Error(`Netzwerkgewichte konnten nicht geladen werden (${response.status})`);
+    throw new Error(`Network weights could not be loaded (${response.status})`);
   }
   return response.json();
 }
@@ -681,7 +689,7 @@ function resolveRelativeUrl(base, relativePath) {
     const baseUrl = base instanceof URL ? base : new URL(base, window.location.href);
     return new URL(relativePath, baseUrl).toString();
   } catch (error) {
-    console.warn("Konnte relative URL nicht auflösen:", relativePath, error);
+    console.warn("Could not resolve relative URL:", relativePath, error);
     return null;
   }
 }
@@ -699,7 +707,7 @@ function decodeBase64ToUint8Array(base64) {
   if (typeof Buffer === "function") {
     return Uint8Array.from(Buffer.from(base64, "base64"));
   }
-  throw new Error("Base64-Dekodierung ist in dieser Umgebung nicht verfügbar.");
+  throw new Error("Base64 decoding is not available in this environment.");
 }
 
 function float16ToFloat32(value) {
@@ -726,13 +734,13 @@ function float16ToFloat32(value) {
 function decodeFloat16Base64(base64, expectedLength) {
   const bytes = decodeBase64ToUint8Array(base64);
   if (bytes.byteLength % 2 !== 0) {
-    throw new Error("Float16-Daten haben eine ungültige Länge.");
+    throw new Error("Float16 data has invalid length.");
   }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const length = bytes.byteLength / 2;
   if (Number.isFinite(expectedLength) && expectedLength > 0 && length !== expectedLength) {
     throw new Error(
-      `Erwartete ${expectedLength} Float16-Werte, erhalten wurden jedoch ${length}.`,
+      `Expected ${expectedLength} Float16 values, but got ${length}.`,
     );
   }
   const result = new Float32Array(length);
@@ -798,14 +806,14 @@ function normaliseWeightsDescriptor(descriptor, baseUrl) {
 async function fetchSnapshotPayload(url) {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
-    throw new Error(`Snapshot konnte nicht geladen werden (${response.status})`);
+    throw new Error(`Snapshot could not be loaded (${response.status})`);
   }
   return response.json();
 }
 
 function decodeSnapshotLayers(payload, layerMetadata) {
   if (!payload || typeof payload !== "object" || !Array.isArray(payload.layers)) {
-    throw new Error("Snapshot-Datei enthält keine gültigen Layerdaten.");
+    throw new Error("Snapshot file does not contain valid layer data.");
   }
 
   return layerMetadata.map((meta, index) => {
@@ -813,21 +821,21 @@ function decodeSnapshotLayers(payload, layerMetadata) {
       payload.layers[index] ??
       payload.layers.find((layer) => Number(layer?.layer_index) === meta.layerIndex);
     if (!layerPayload) {
-      throw new Error(`Snapshot fehlt Layer ${meta.layerIndex}.`);
+      throw new Error(`Snapshot missing layer ${meta.layerIndex}.`);
     }
     const weightsInfo = layerPayload.weights ?? {};
     const biasesInfo = layerPayload.biases ?? {};
     if (typeof weightsInfo.data !== "string" || typeof biasesInfo.data !== "string") {
-      throw new Error("Snapshot-Layer enthält keine kodierten Gewichte.");
+      throw new Error("Snapshot layer does not contain encoded weights.");
     }
 
     const weightShape = normaliseShape(weightsInfo.shape, meta.weightShape);
     const biasShape = normaliseShape(biasesInfo.shape, meta.biasShape);
     if (weightShape.length !== 2) {
-      throw new Error("Snapshot-Layer hat eine ungültige Gewichtsdimension.");
+      throw new Error("Snapshot layer has invalid weight dimension.");
     }
     if (biasShape.length === 0) {
-      throw new Error("Snapshot-Layer hat eine ungültige Bias-Dimension.");
+      throw new Error("Snapshot layer has invalid bias dimension.");
     }
 
     const weights = decodeWeightMatrix(weightsInfo.data, weightShape);
@@ -1019,7 +1027,7 @@ function setupTimelineSlider(timelineSnapshots, options = {}) {
     const nextIndex = Number(event.target.value);
     if (Number.isNaN(nextIndex)) return;
     setActiveIndex(nextIndex, { emit: true }).catch((error) => {
-      console.error("Fehler beim Aktualisieren des Snapshots:", error);
+      console.error("Error updating snapshot:", error);
     });
   });
 
@@ -1027,7 +1035,7 @@ function setupTimelineSlider(timelineSnapshots, options = {}) {
     const nextIndex = Number(event.target.value);
     if (Number.isNaN(nextIndex)) return;
     setActiveIndex(nextIndex, { emit: true }).catch((error) => {
-      console.error("Fehler beim Aktualisieren des Snapshots:", error);
+      console.error("Error updating snapshot:", error);
     });
   });
 
@@ -1045,7 +1053,7 @@ function setupTimelineSlider(timelineSnapshots, options = {}) {
 class DigitSketchPad {
   constructor(container, rows, cols, options = {}) {
     if (!container) {
-      throw new Error("Raster-Container nicht gefunden.");
+      throw new Error("Grid container not found.");
     }
     this.container = container;
     this.rows = rows;
@@ -1085,7 +1093,7 @@ class DigitSketchPad {
     this.container.innerHTML = "";
     const title = document.createElement("div");
     title.className = "grid-title";
-    title.textContent = "Ziffer zeichnen";
+    title.textContent = t("drawing.title");
     this.interactionRow = document.createElement("div");
     this.interactionRow.className = "grid-interaction-row";
     this.interactionRow.appendChild(this.gridElement);
@@ -1096,6 +1104,16 @@ class DigitSketchPad {
     this.gridElement.addEventListener("pointermove", (event) => this.handlePointerMove(event));
     window.addEventListener("pointerup", () => this.handlePointerUp());
     this.gridElement.addEventListener("contextmenu", (event) => event.preventDefault());
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.updateLanguage());
+  }
+  
+  updateLanguage() {
+    const title = this.container.querySelector(".grid-title");
+    if (title) {
+      title.textContent = t("drawing.title");
+    }
   }
 
   setChangeHandler(handler) {
@@ -1230,11 +1248,11 @@ class DigitSketchPad {
 
   setPixels(pixels) {
     if (!pixels || typeof pixels.length !== "number") {
-      throw new Error("Ungültige Pixelwerte für den Zeichenblock.");
+      throw new Error("Invalid pixel values for drawing pad.");
     }
     if (pixels.length !== this.values.length) {
       throw new Error(
-        `Erwartete ${this.values.length} Pixel, erhielt aber ${pixels.length}.`,
+        `Expected ${this.values.length} pixels, but got ${pixels.length}.`,
       );
     }
     for (let i = 0; i < this.values.length; i += 1) {
@@ -1271,7 +1289,7 @@ class DigitSketchPad {
 class FeedForwardModel {
   constructor(definition) {
     if (!definition.layers?.length) {
-      throw new Error("Die Netzwerkdefinition muss Schichten enthalten.");
+      throw new Error("Network definition must contain layers.");
     }
     this.normalization = definition.normalization ?? { mean: 0, std: 1 };
     this.architecture = Array.isArray(definition.architecture)
@@ -1322,7 +1340,7 @@ class FeedForwardModel {
 
   updateLayers(layerDefinitions) {
     if (!Array.isArray(layerDefinitions) || layerDefinitions.length === 0) {
-      throw new Error("Neue Layerdefinitionen müssen mindestens eine Schicht enthalten.");
+      throw new Error("New layer definitions must contain at least one layer.");
     }
     this.layers = layerDefinitions.map((layer, index) => this.normaliseLayer(layer, index));
     this.architecture = this.computeArchitecture(this.layers);
@@ -1379,21 +1397,30 @@ class ProbabilityPanel {
     this.container = container;
     this.rows = [];
     if (!this.container) {
-      throw new Error("Vorhersage-Diagrammcontainer nicht gefunden.");
+      throw new Error("Prediction chart container not found.");
     }
     this.build();
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.updateLanguage());
+  }
+  
+  updateLanguage() {
+    if (this.titleElement) {
+      this.titleElement.textContent = t("predictions.title");
+    }
   }
 
   build() {
     this.container.innerHTML = "";
-    const title = document.createElement("h3");
-    title.textContent = "Wahrscheinlichkeiten der Ziffern";
-    this.container.appendChild(title);
+    this.titleElement = document.createElement("h3");
+    this.titleElement.textContent = t("predictions.title");
+    this.container.appendChild(this.titleElement);
 
     this.chartElement = document.createElement("div");
     this.chartElement.className = "prediction-chart";
     this.container.appendChild(this.chartElement);
-
+    
     for (let digit = 0; digit < 10; digit += 1) {
       const row = document.createElement("div");
       row.className = "prediction-bar-container";
@@ -1443,9 +1470,9 @@ class NetworkInfoPanel {
   constructor(container) {
     this.container = container;
     if (!this.container) {
-      throw new Error("Netzwerkinfo-Container nicht gefunden.");
+      throw new Error("Network info container not found.");
     }
-    this.numberFormatter = new Intl.NumberFormat("de-DE");
+    this.numberFormatter = new Intl.NumberFormat("en-US");
     this.build();
   }
 
@@ -1456,7 +1483,7 @@ class NetworkInfoPanel {
     }
     this.titleElement = document.createElement("h3");
     this.titleElement.className = "network-info-panel__title";
-    this.titleElement.textContent = "Netzwerkübersicht";
+    this.titleElement.textContent = t("network.overview");
 
     this.summaryElement = document.createElement("div");
     this.summaryElement.className = "network-info-panel__summary";
@@ -1466,7 +1493,7 @@ class NetworkInfoPanel {
 
     this.emptyElement = document.createElement("div");
     this.emptyElement.className = "network-info-panel__empty";
-    this.emptyElement.textContent = "Keine Netzwerkdaten verfügbar.";
+    this.emptyElement.textContent = t("network.noData");
 
     this.container.appendChild(this.titleElement);
     this.container.appendChild(this.summaryElement);
@@ -1476,6 +1503,22 @@ class NetworkInfoPanel {
     this.summaryElement.style.display = "none";
     this.layersElement.style.display = "none";
     this.emptyElement.style.display = "block";
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.updateLanguage());
+  }
+  
+  updateLanguage() {
+    if (this.titleElement) {
+      this.titleElement.textContent = t("network.overview");
+    }
+    if (this.emptyElement) {
+      this.emptyElement.textContent = t("network.noData");
+    }
+    // Rebuild if we have data
+    if (this.lastModel) {
+      this.update(this.lastModel);
+    }
   }
 
   formatNumber(value) {
@@ -1517,6 +1560,7 @@ class NetworkInfoPanel {
   }
 
   update(model) {
+    this.lastModel = model;
     if (!model || !Array.isArray(model.layers) || model.layers.length === 0) {
       this.emptyElement.style.display = "block";
       this.summaryElement.style.display = "none";
@@ -1563,7 +1607,7 @@ class NetworkInfoPanel {
 
     const totalParameters = layerSummaries.reduce((sum, entry) => sum + entry.parameterCount, 0);
     this.summaryElement.innerHTML = "";
-    this.summaryElement.appendChild(this.buildSummaryLine("Gesamtparameter", totalParameters));
+    this.summaryElement.appendChild(this.buildSummaryLine(t("network.totalParameters"), totalParameters));
     if (architecture.length > 0) {
       const firstArchitectureValue = architecture[0];
       const lastArchitectureValue = architecture[architecture.length - 1];
@@ -1576,10 +1620,10 @@ class NetworkInfoPanel {
         typeof lastArchitectureValue === "number" && Number.isFinite(lastArchitectureValue)
           ? lastArchitectureValue
           : lastLayer?.outputSize ?? 0;
-      this.summaryElement.appendChild(this.buildSummaryLine("Eingabeknoten", inputNodes));
-      this.summaryElement.appendChild(this.buildSummaryLine("Ausgabeklassen", outputNodes));
+      this.summaryElement.appendChild(this.buildSummaryLine(t("network.inputNodes"), inputNodes));
+      this.summaryElement.appendChild(this.buildSummaryLine(t("network.outputClasses"), outputNodes));
     }
-    this.summaryElement.appendChild(this.buildSummaryLine("Layer (inkl. Ausgaben)", layerSummaries.length));
+    this.summaryElement.appendChild(this.buildSummaryLine(t("network.layers"), layerSummaries.length));
 
     this.layersElement.innerHTML = "";
     layerSummaries.forEach((entry) => {
@@ -1593,9 +1637,9 @@ class NetworkInfoPanel {
 
       const metrics = document.createElement("div");
       metrics.className = "network-info-panel__layer-metrics";
-      metrics.appendChild(this.buildMetric("Gewichte", entry.weightCount));
-      metrics.appendChild(this.buildMetric("Bias", entry.biasCount));
-      metrics.appendChild(this.buildMetric("Summe", entry.parameterCount));
+      metrics.appendChild(this.buildMetric(t("network.weights"), entry.weightCount));
+      metrics.appendChild(this.buildMetric(t("network.bias"), entry.biasCount));
+      metrics.appendChild(this.buildMetric(t("network.total"), entry.parameterCount));
 
       layerRow.appendChild(title);
       layerRow.appendChild(metrics);
@@ -1650,10 +1694,10 @@ class NeuronDetailPanel {
           .map(
             (entry) => `
       <div class="neuron-detail-panel__row">
-        <div><small>Quelle</small><br><strong>#${entry.sourceIndex + 1}</strong></div>
-        <div><small>Input</small><br>${this.formatValue(entry.sourceActivation)}</div>
-        <div><small>Gewicht</small><br>${this.formatValue(entry.weight)}</div>
-        <div><small>Produkt</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
+        <div><small>${t("neuronDetail.source")}</small><br><strong>#${entry.sourceIndex + 1}</strong></div>
+        <div><small>${t("neuronDetail.input")}</small><br>${this.formatValue(entry.sourceActivation)}</div>
+        <div><small>${t("neuronDetail.weight")}</small><br>${this.formatValue(entry.weight)}</div>
+        <div><small>${t("neuronDetail.product")}</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
       </div>
     `,
           )
@@ -1665,10 +1709,10 @@ class NeuronDetailPanel {
           .map(
             (entry) => `
       <div class="neuron-detail-panel__row">
-        <div><small>Ziel</small><br><strong>#${entry.targetIndex + 1}</strong></div>
-        <div><small>Aktivierung (Ziel)</small><br>${this.formatValue(entry.targetActivation)}</div>
-        <div><small>Gewicht</small><br>${this.formatValue(entry.weight)}</div>
-        <div><small>Beitrag</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
+        <div><small>${t("neuronDetail.target")}</small><br><strong>#${entry.targetIndex + 1}</strong></div>
+        <div><small>${t("neuronDetail.activation")}</small><br>${this.formatValue(entry.targetActivation)}</div>
+        <div><small>${t("neuronDetail.weight")}</small><br>${this.formatValue(entry.weight)}</div>
+        <div><small>${t("neuronDetail.contribution")}</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
       </div>
     `,
           )
@@ -1681,7 +1725,7 @@ class NeuronDetailPanel {
       payload.bias !== null && payload.bias !== undefined
         ? `
       <div class="neuron-detail-panel__row neuron-detail-panel__row--bias">
-        <div><small>Bias</small><br><strong>${this.formatValue(payload.bias)}</strong></div>
+        <div><small>${t("network.bias")}</small><br><strong>${this.formatValue(payload.bias)}</strong></div>
         <div></div>
         <div></div>
         <div></div>
@@ -1713,27 +1757,27 @@ class NeuronDetailPanel {
     const incomingSection = hasIncoming
       ? `
       <div>
-        <div class="neuron-detail-panel__section-title">Eingehende Beiträge</div>
+        <div class="neuron-detail-panel__section-title">${t("neuronDetail.incomingContributions")}</div>
         <div class="neuron-detail-panel__row neuron-detail-panel__row--header">
-          <div>Quelle</div>
-          <div>Input</div>
-          <div>Gewicht</div>
-          <div>Produkt</div>
+          <div>${t("neuronDetail.source")}</div>
+          <div>${t("neuronDetail.input")}</div>
+          <div>${t("neuronDetail.weight")}</div>
+          <div>${t("neuronDetail.product")}</div>
         </div>
         ${incomingRows}
       </div>
     `
-      : `<div class="neuron-detail-panel__empty">Keine eingehenden Verbindungen für diese Schicht.</div>`;
+      : `<div class="neuron-detail-panel__empty">${t("neuronDetail.noIncomingConnections")}</div>`;
 
     const outgoingSection = hasOutgoing
       ? `
       <div>
-        <div class="neuron-detail-panel__section-title">Ausgehende Beiträge</div>
+        <div class="neuron-detail-panel__section-title">${t("neuronDetail.outgoingContributions")}</div>
         <div class="neuron-detail-panel__row neuron-detail-panel__row--header">
-          <div>Ziel</div>
-          <div>Aktivierung (Ziel)</div>
-          <div>Gewicht</div>
-          <div>Beitrag</div>
+          <div>${t("neuronDetail.target")}</div>
+          <div>${t("neuronDetail.activation")}</div>
+          <div>${t("neuronDetail.weight")}</div>
+          <div>${t("neuronDetail.contribution")}</div>
         </div>
         ${outgoingRows}
       </div>
@@ -1742,7 +1786,7 @@ class NeuronDetailPanel {
 
     const summaryFormula =
       payload.preActivation !== null && payload.preActivation !== undefined
-        ? `Σ = Σ(input × gewicht)${payload.bias !== null && payload.bias !== undefined ? " + bias" : ""}`
+        ? `Σ = Σ(input × weight)${payload.bias !== null && payload.bias !== undefined ? " + bias" : ""}`
         : "";
 
     this.root.innerHTML = `
@@ -1751,7 +1795,7 @@ class NeuronDetailPanel {
           <div class="neuron-detail-panel__title">${payload.layerLabel} • Neuron ${payload.neuronIndex + 1}${
             payload.activationName ? ` (${payload.activationName})` : ""
           }</div>
-          <button type="button" class="neuron-detail-panel__close">Auswahl aufheben</button>
+          <button type="button" class="neuron-detail-panel__close">${t("neuronDetail.clearSelection")}</button>
         </div>
         <div class="neuron-detail-panel__body">
           <div class="neuron-detail-panel__summary">
@@ -1759,8 +1803,8 @@ class NeuronDetailPanel {
           </div>
           ${totalsBlock}
           <div class="neuron-detail-panel__activations">
-            <span>Eingangsschicht-Größe: ${payload.previousLayerSize ?? "—"}</span>
-            <span>Ausgangsschicht-Größe: ${payload.nextLayerSize ?? "—"}</span>
+            <span>${t("neuronDetail.inputLayerSize")} ${payload.previousLayerSize ?? "—"}</span>
+            <span>${t("neuronDetail.outputLayerSize")} ${payload.nextLayerSize ?? "—"}</span>
           </div>
           ${incomingSection}
           ${outgoingSection}
@@ -1772,6 +1816,18 @@ class NeuronDetailPanel {
     const closeButton = this.root.querySelector(".neuron-detail-panel__close");
     if (closeButton) {
       closeButton.addEventListener("click", this.handleClose);
+    }
+    
+    // Store payload for language updates
+    this.lastPayload = payload;
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.updateLanguage());
+  }
+  
+  updateLanguage() {
+    if (this.lastPayload) {
+      this.render(this.lastPayload);
     }
   }
 
@@ -1799,13 +1855,16 @@ class FpsMonitor {
 
     this.valueElement = document.createElement("span");
     this.valueElement.className = "fps-overlay__value";
-    this.valueElement.textContent = "— fps";
+    this.valueElement.textContent = `— ${t("fps.fps")}`;
 
     this.root.appendChild(this.valueElement);
     document.body.appendChild(this.root);
     this.refreshDisplay = this.refreshDisplay.bind(this);
     this.displayTimer = window.setInterval(this.refreshDisplay, 250);
     this.refreshDisplay();
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.refreshDisplay());
   }
 
   update(time) {
@@ -1838,15 +1897,15 @@ class FpsMonitor {
       this.lastFrameTimestamp > 0 ? now - this.lastFrameTimestamp : Number.POSITIVE_INFINITY;
 
     if (!Number.isFinite(timeSinceLastFrame) || timeSinceLastFrame > 600) {
-      this.valueElement.textContent = "idle";
+      this.valueElement.textContent = t("fps.idle");
       this.currentFps = null;
       return;
     }
 
     if (this.currentFps !== null) {
-      this.valueElement.textContent = `${this.currentFps} fps`;
+      this.valueElement.textContent = `${this.currentFps} ${t("fps.fps")}`;
     } else {
-      this.valueElement.textContent = "— fps";
+      this.valueElement.textContent = `— ${t("fps.fps")}`;
     }
   }
 }
@@ -2423,12 +2482,12 @@ class NeuralVisualizer {
 
   describeLayer(layerIndex) {
     if (layerIndex === 0) {
-      return `Eingabeschicht (${this.mlp.architecture[layerIndex]} Knoten)`;
+      return `Input Layer (${this.mlp.architecture[layerIndex]} nodes)`;
     }
     if (layerIndex === this.mlp.architecture.length - 1) {
-      return `Ausgabeschicht (${this.mlp.architecture[layerIndex]} Knoten)`;
+      return `Output Layer (${this.mlp.architecture[layerIndex]} nodes)`;
     }
-    return `Verborgene Schicht ${layerIndex} (${this.mlp.architecture[layerIndex]} Knoten)`;
+    return `Hidden Layer ${layerIndex} (${this.mlp.architecture[layerIndex]} nodes)`;
   }
 
   getActivationName(layerIndex) {
