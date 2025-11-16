@@ -1019,7 +1019,7 @@ function setupTimelineSlider(timelineSnapshots, options = {}) {
     const nextIndex = Number(event.target.value);
     if (Number.isNaN(nextIndex)) return;
     setActiveIndex(nextIndex, { emit: true }).catch((error) => {
-      console.error("Fehler beim Aktualisieren des Snapshots:", error);
+      console.error("Error updating snapshot:", error);
     });
   });
 
@@ -1027,7 +1027,7 @@ function setupTimelineSlider(timelineSnapshots, options = {}) {
     const nextIndex = Number(event.target.value);
     if (Number.isNaN(nextIndex)) return;
     setActiveIndex(nextIndex, { emit: true }).catch((error) => {
-      console.error("Fehler beim Aktualisieren des Snapshots:", error);
+      console.error("Error updating snapshot:", error);
     });
   });
 
