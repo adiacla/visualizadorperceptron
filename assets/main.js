@@ -20,10 +20,18 @@ const VISUALIZER_CONFIG = {
 
 const MNIST_SAMPLE_MANIFEST_URL = "./assets/data/mnist-test-manifest.json";
 
+// i18n helper function
+function t(key, params) {
+  if (window.i18n && typeof window.i18n.t === 'function') {
+    return window.i18n.t(key, params);
+  }
+  return key;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initializeVisualizer().catch((error) => {
     console.error(error);
-    renderErrorMessage("Visualization could not be initialized. See console for details.");
+    renderErrorMessage(t("errors.initializationFailed"));
   });
 });
 
@@ -151,7 +159,7 @@ async function setupMnistSampleButtons({ digitCanvas, onSampleApplied, manifestP
     button.type = "button";
     button.className = "digit-button";
     button.textContent = String(digit);
-    button.setAttribute("aria-label", `Load random ${digit}`);
+    button.setAttribute("aria-label", t("aria.loadRandom", { digit }));
     button.addEventListener("click", () => {
       const sample = loader.getRandomSample(digit);
       if (!sample) return;
@@ -1085,7 +1093,7 @@ class DigitSketchPad {
     this.container.innerHTML = "";
     const title = document.createElement("div");
     title.className = "grid-title";
-    title.textContent = "Draw digit";
+    title.textContent = t("drawing.title");
     this.interactionRow = document.createElement("div");
     this.interactionRow.className = "grid-interaction-row";
     this.interactionRow.appendChild(this.gridElement);
@@ -1096,6 +1104,16 @@ class DigitSketchPad {
     this.gridElement.addEventListener("pointermove", (event) => this.handlePointerMove(event));
     window.addEventListener("pointerup", () => this.handlePointerUp());
     this.gridElement.addEventListener("contextmenu", (event) => event.preventDefault());
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.updateLanguage());
+  }
+  
+  updateLanguage() {
+    const title = this.container.querySelector(".grid-title");
+    if (title) {
+      title.textContent = t("drawing.title");
+    }
   }
 
   setChangeHandler(handler) {
@@ -1382,18 +1400,27 @@ class ProbabilityPanel {
       throw new Error("Prediction chart container not found.");
     }
     this.build();
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.updateLanguage());
+  }
+  
+  updateLanguage() {
+    if (this.titleElement) {
+      this.titleElement.textContent = t("predictions.title");
+    }
   }
 
   build() {
     this.container.innerHTML = "";
-    const title = document.createElement("h3");
-    title.textContent = "Digit Probabilities";
-    this.container.appendChild(title);
+    this.titleElement = document.createElement("h3");
+    this.titleElement.textContent = t("predictions.title");
+    this.container.appendChild(this.titleElement);
 
     this.chartElement = document.createElement("div");
     this.chartElement.className = "prediction-chart";
     this.container.appendChild(this.chartElement);
-
+    
     for (let digit = 0; digit < 10; digit += 1) {
       const row = document.createElement("div");
       row.className = "prediction-bar-container";
@@ -1456,7 +1483,7 @@ class NetworkInfoPanel {
     }
     this.titleElement = document.createElement("h3");
     this.titleElement.className = "network-info-panel__title";
-    this.titleElement.textContent = "Network Overview";
+    this.titleElement.textContent = t("network.overview");
 
     this.summaryElement = document.createElement("div");
     this.summaryElement.className = "network-info-panel__summary";
@@ -1466,7 +1493,7 @@ class NetworkInfoPanel {
 
     this.emptyElement = document.createElement("div");
     this.emptyElement.className = "network-info-panel__empty";
-    this.emptyElement.textContent = "No network data available.";
+    this.emptyElement.textContent = t("network.noData");
 
     this.container.appendChild(this.titleElement);
     this.container.appendChild(this.summaryElement);
@@ -1476,6 +1503,22 @@ class NetworkInfoPanel {
     this.summaryElement.style.display = "none";
     this.layersElement.style.display = "none";
     this.emptyElement.style.display = "block";
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.updateLanguage());
+  }
+  
+  updateLanguage() {
+    if (this.titleElement) {
+      this.titleElement.textContent = t("network.overview");
+    }
+    if (this.emptyElement) {
+      this.emptyElement.textContent = t("network.noData");
+    }
+    // Rebuild if we have data
+    if (this.lastModel) {
+      this.update(this.lastModel);
+    }
   }
 
   formatNumber(value) {
@@ -1517,6 +1560,7 @@ class NetworkInfoPanel {
   }
 
   update(model) {
+    this.lastModel = model;
     if (!model || !Array.isArray(model.layers) || model.layers.length === 0) {
       this.emptyElement.style.display = "block";
       this.summaryElement.style.display = "none";
@@ -1563,7 +1607,7 @@ class NetworkInfoPanel {
 
     const totalParameters = layerSummaries.reduce((sum, entry) => sum + entry.parameterCount, 0);
     this.summaryElement.innerHTML = "";
-    this.summaryElement.appendChild(this.buildSummaryLine("Total Parameters", totalParameters));
+    this.summaryElement.appendChild(this.buildSummaryLine(t("network.totalParameters"), totalParameters));
     if (architecture.length > 0) {
       const firstArchitectureValue = architecture[0];
       const lastArchitectureValue = architecture[architecture.length - 1];
@@ -1576,10 +1620,10 @@ class NetworkInfoPanel {
         typeof lastArchitectureValue === "number" && Number.isFinite(lastArchitectureValue)
           ? lastArchitectureValue
           : lastLayer?.outputSize ?? 0;
-      this.summaryElement.appendChild(this.buildSummaryLine("Input Nodes", inputNodes));
-      this.summaryElement.appendChild(this.buildSummaryLine("Output Classes", outputNodes));
+      this.summaryElement.appendChild(this.buildSummaryLine(t("network.inputNodes"), inputNodes));
+      this.summaryElement.appendChild(this.buildSummaryLine(t("network.outputClasses"), outputNodes));
     }
-    this.summaryElement.appendChild(this.buildSummaryLine("Layers (incl. Output)", layerSummaries.length));
+    this.summaryElement.appendChild(this.buildSummaryLine(t("network.layers"), layerSummaries.length));
 
     this.layersElement.innerHTML = "";
     layerSummaries.forEach((entry) => {
@@ -1593,9 +1637,9 @@ class NetworkInfoPanel {
 
       const metrics = document.createElement("div");
       metrics.className = "network-info-panel__layer-metrics";
-      metrics.appendChild(this.buildMetric("Weights", entry.weightCount));
-      metrics.appendChild(this.buildMetric("Bias", entry.biasCount));
-      metrics.appendChild(this.buildMetric("Total", entry.parameterCount));
+      metrics.appendChild(this.buildMetric(t("network.weights"), entry.weightCount));
+      metrics.appendChild(this.buildMetric(t("network.bias"), entry.biasCount));
+      metrics.appendChild(this.buildMetric(t("network.total"), entry.parameterCount));
 
       layerRow.appendChild(title);
       layerRow.appendChild(metrics);
@@ -1650,10 +1694,10 @@ class NeuronDetailPanel {
           .map(
             (entry) => `
       <div class="neuron-detail-panel__row">
-        <div><small>Source</small><br><strong>#${entry.sourceIndex + 1}</strong></div>
-        <div><small>Input</small><br>${this.formatValue(entry.sourceActivation)}</div>
-        <div><small>Weight</small><br>${this.formatValue(entry.weight)}</div>
-        <div><small>Product</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
+        <div><small>${t("neuronDetail.source")}</small><br><strong>#${entry.sourceIndex + 1}</strong></div>
+        <div><small>${t("neuronDetail.input")}</small><br>${this.formatValue(entry.sourceActivation)}</div>
+        <div><small>${t("neuronDetail.weight")}</small><br>${this.formatValue(entry.weight)}</div>
+        <div><small>${t("neuronDetail.product")}</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
       </div>
     `,
           )
@@ -1665,10 +1709,10 @@ class NeuronDetailPanel {
           .map(
             (entry) => `
       <div class="neuron-detail-panel__row">
-        <div><small>Target</small><br><strong>#${entry.targetIndex + 1}</strong></div>
-        <div><small>Activation (Target)</small><br>${this.formatValue(entry.targetActivation)}</div>
-        <div><small>Weight</small><br>${this.formatValue(entry.weight)}</div>
-        <div><small>Contribution</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
+        <div><small>${t("neuronDetail.target")}</small><br><strong>#${entry.targetIndex + 1}</strong></div>
+        <div><small>${t("neuronDetail.activation")}</small><br>${this.formatValue(entry.targetActivation)}</div>
+        <div><small>${t("neuronDetail.weight")}</small><br>${this.formatValue(entry.weight)}</div>
+        <div><small>${t("neuronDetail.contribution")}</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
       </div>
     `,
           )
@@ -1681,7 +1725,7 @@ class NeuronDetailPanel {
       payload.bias !== null && payload.bias !== undefined
         ? `
       <div class="neuron-detail-panel__row neuron-detail-panel__row--bias">
-        <div><small>Bias</small><br><strong>${this.formatValue(payload.bias)}</strong></div>
+        <div><small>${t("network.bias")}</small><br><strong>${this.formatValue(payload.bias)}</strong></div>
         <div></div>
         <div></div>
         <div></div>
@@ -1713,27 +1757,27 @@ class NeuronDetailPanel {
     const incomingSection = hasIncoming
       ? `
       <div>
-        <div class="neuron-detail-panel__section-title">Incoming Contributions</div>
+        <div class="neuron-detail-panel__section-title">${t("neuronDetail.incomingContributions")}</div>
         <div class="neuron-detail-panel__row neuron-detail-panel__row--header">
-          <div>Source</div>
-          <div>Input</div>
-          <div>Weight</div>
-          <div>Product</div>
+          <div>${t("neuronDetail.source")}</div>
+          <div>${t("neuronDetail.input")}</div>
+          <div>${t("neuronDetail.weight")}</div>
+          <div>${t("neuronDetail.product")}</div>
         </div>
         ${incomingRows}
       </div>
     `
-      : `<div class="neuron-detail-panel__empty">No incoming connections for this layer.</div>`;
+      : `<div class="neuron-detail-panel__empty">${t("neuronDetail.noIncomingConnections")}</div>`;
 
     const outgoingSection = hasOutgoing
       ? `
       <div>
-        <div class="neuron-detail-panel__section-title">Outgoing Contributions</div>
+        <div class="neuron-detail-panel__section-title">${t("neuronDetail.outgoingContributions")}</div>
         <div class="neuron-detail-panel__row neuron-detail-panel__row--header">
-          <div>Target</div>
-          <div>Activation (Target)</div>
-          <div>Weight</div>
-          <div>Contribution</div>
+          <div>${t("neuronDetail.target")}</div>
+          <div>${t("neuronDetail.activation")}</div>
+          <div>${t("neuronDetail.weight")}</div>
+          <div>${t("neuronDetail.contribution")}</div>
         </div>
         ${outgoingRows}
       </div>
@@ -1751,7 +1795,7 @@ class NeuronDetailPanel {
           <div class="neuron-detail-panel__title">${payload.layerLabel} • Neuron ${payload.neuronIndex + 1}${
             payload.activationName ? ` (${payload.activationName})` : ""
           }</div>
-          <button type="button" class="neuron-detail-panel__close">Clear selection</button>
+          <button type="button" class="neuron-detail-panel__close">${t("neuronDetail.clearSelection")}</button>
         </div>
         <div class="neuron-detail-panel__body">
           <div class="neuron-detail-panel__summary">
@@ -1759,8 +1803,8 @@ class NeuronDetailPanel {
           </div>
           ${totalsBlock}
           <div class="neuron-detail-panel__activations">
-            <span>Input Layer Size: ${payload.previousLayerSize ?? "—"}</span>
-            <span>Output Layer Size: ${payload.nextLayerSize ?? "—"}</span>
+            <span>${t("neuronDetail.inputLayerSize")} ${payload.previousLayerSize ?? "—"}</span>
+            <span>${t("neuronDetail.outputLayerSize")} ${payload.nextLayerSize ?? "—"}</span>
           </div>
           ${incomingSection}
           ${outgoingSection}
@@ -1772,6 +1816,18 @@ class NeuronDetailPanel {
     const closeButton = this.root.querySelector(".neuron-detail-panel__close");
     if (closeButton) {
       closeButton.addEventListener("click", this.handleClose);
+    }
+    
+    // Store payload for language updates
+    this.lastPayload = payload;
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.updateLanguage());
+  }
+  
+  updateLanguage() {
+    if (this.lastPayload) {
+      this.render(this.lastPayload);
     }
   }
 
@@ -1799,13 +1855,16 @@ class FpsMonitor {
 
     this.valueElement = document.createElement("span");
     this.valueElement.className = "fps-overlay__value";
-    this.valueElement.textContent = "— fps";
+    this.valueElement.textContent = `— ${t("fps.fps")}`;
 
     this.root.appendChild(this.valueElement);
     document.body.appendChild(this.root);
     this.refreshDisplay = this.refreshDisplay.bind(this);
     this.displayTimer = window.setInterval(this.refreshDisplay, 250);
     this.refreshDisplay();
+    
+    // Listen for language changes
+    window.addEventListener("languageChanged", () => this.refreshDisplay());
   }
 
   update(time) {
@@ -1838,15 +1897,15 @@ class FpsMonitor {
       this.lastFrameTimestamp > 0 ? now - this.lastFrameTimestamp : Number.POSITIVE_INFINITY;
 
     if (!Number.isFinite(timeSinceLastFrame) || timeSinceLastFrame > 600) {
-      this.valueElement.textContent = "idle";
+      this.valueElement.textContent = t("fps.idle");
       this.currentFps = null;
       return;
     }
 
     if (this.currentFps !== null) {
-      this.valueElement.textContent = `${this.currentFps} fps`;
+      this.valueElement.textContent = `${this.currentFps} ${t("fps.fps")}`;
     } else {
-      this.valueElement.textContent = "— fps";
+      this.valueElement.textContent = `— ${t("fps.fps")}`;
     }
   }
 }

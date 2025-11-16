@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MNIST MLP – Inference Visualization</title>
+  <script src="./assets/i18n.js"></script>
   <script type="module" crossorigin src="./assets/main.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/main.css">
 </head>
@@ -33,8 +34,8 @@
     <div id="instructionsOverlay" class="instructions-overlay">
         <div class="instructions-container">
             <div class="instructions-content">
-                <p><strong>Drawing:</strong> Click and drag on the grid (right-click to erase)</p>
-                <p><strong>3D Controls:</strong> • Left button + drag = rotate • Right button + drag = pan • Scroll wheel = zoom</p>
+                <p><strong>Drawing:</strong> <span data-i18n="drawing.instructions"></span></p>
+                <p><strong data-i18n="controls3d.title"></strong> <span data-i18n="controls3d.instructions"></span></p>
             </div>
         </div>
     </div>
@@ -42,18 +43,27 @@
     <!-- Mobile Instructions Overlay -->
     <div id="mobileInstructionsOverlay" class="mobile-instructions-overlay">
         <div class="mobile-instructions-content">
-            <div class="mobile-instructions-title">Touch Controls</div>
+            <div class="mobile-instructions-title" data-i18n="mobile.touchControls"></div>
             <ul class="mobile-gesture-list">
-                <li><strong>Drawing:</strong> Tap and drag on the grid</li>
-                <li><strong>Rotate:</strong> Drag with one finger</li>
-                <li><strong>Pan:</strong> Move with two fingers</li>
-                <li><strong>Zoom:</strong> Pinch or spread fingers</li>
+                <li><strong>Drawing:</strong> <span data-i18n="drawing.mobileInstructions"></span></li>
+                <li><strong data-i18n="controls3d.rotate"></strong> <span data-i18n="controls3d.rotateMobile"></span></li>
+                <li><strong data-i18n="controls3d.pan"></strong> <span data-i18n="controls3d.panMobile"></span></li>
+                <li><strong data-i18n="controls3d.zoom"></strong> <span data-i18n="controls3d.zoomMobile"></span></li>
             </ul>
         </div>
     </div>
 
     <!-- Floating Controls -->
     <div class="floating-controls">
+        <button
+            id="languageToggleButton"
+            class="floating-button language-toggle-button"
+            type="button"
+            aria-label="Switch language"
+            title="Switch language"
+        >
+            <span id="languageToggleText">EN</span>
+        </button>
         <button
             id="advancedSettingsButton"
             class="floating-button advanced-settings-button"
@@ -84,7 +94,7 @@
     <div id="timelineOverlay" class="timeline-overlay hidden">
         <div class="timeline-container">
             <div class="timeline-header">
-                <span class="timeline-title">Training Progress</span>
+                <span class="timeline-title" data-i18n="timeline.title"></span>
                 <span id="timelineSummary" class="timeline-summary"></span>
             </div>
             <input
@@ -95,7 +105,7 @@
                 value="0"
                 step="1"
                 disabled
-                aria-label="Training Progress"
+                data-i18n-aria-label="timeline.ariaLabel"
             >
             <div class="timeline-meta">
                 <span id="timelineLabel" class="timeline-label"></span>
@@ -117,56 +127,56 @@
     <div id="infoModal" class="info-modal">
         <div class="info-modal-content">
             <div class="info-modal-header">
-                <h3>MNIST Digit Classification – Inference Visualization</h3>
+                <h3 data-i18n="infoModal.title"></h3>
                 <button id="closeInfoModal" class="close-modal-btn">×</button>
             </div>
             <div class="info-modal-body">
-                <p><strong>Interactive Neural Network Visualization</strong></p>
-                <p>This application shows a compact Multi-Layer Perceptron (MLP) trained on MNIST. Draw a digit and observe how activations propagate in real-time through all fully connected layers.</p>
+                <p><strong data-i18n="infoModal.subtitle"></strong></p>
+                <p data-i18n="infoModal.description"></p>
                 
-                <h4>How it works:</h4>
+                <h4 data-i18n="infoModal.howItWorks"></h4>
                 <ul>
-                    <li><strong>Drawing:</strong> Click and drag in the 2D grid (top left) to sketch a digit</li>
-                    <li><strong>Observing:</strong> Track how your sketch travels through the network layers in 3D space</li>
-                    <li><strong>Prediction:</strong> Check the probability for each digit (0–9) in the chart (top right)</li>
+                    <li><strong>Drawing:</strong> <span data-i18n="infoModal.howItWorksDrawing"></span></li>
+                    <li><strong>Observing:</strong> <span data-i18n="infoModal.howItWorksObserving"></span></li>
+                    <li><strong>Prediction:</strong> <span data-i18n="infoModal.howItWorksPrediction"></span></li>
                 </ul>
 
-                <h4>Network Architecture (Default Export):</h4>
+                <h4 data-i18n="infoModal.networkArchitecture"></h4>
                 <ul>
-                    <li><strong>Input Layer:</strong> 28×28 pixel grid (your drawing)</li>
-                    <li><strong>Dense Layer 1:</strong> 784 → 64 neurons with ReLU</li>
-                    <li><strong>Dense Layer 2:</strong> 64 → 32 neurons with ReLU</li>
-                    <li><strong>Output Layer:</strong> 32 → 10 logits → Softmax probabilities</li>
+                    <li><strong data-i18n="infoModal.inputLayer"></strong> <span data-i18n="infoModal.inputLayerDesc"></span></li>
+                    <li><strong>Dense Layer 1:</strong> 784 → 64 <span data-i18n="infoModal.denseLayerDesc"></span></li>
+                    <li><strong>Dense Layer 2:</strong> 64 → 32 <span data-i18n="infoModal.denseLayerDesc"></span></li>
+                    <li><strong data-i18n="infoModal.outputLayer"></strong> <span data-i18n="infoModal.outputLayerDesc"></span></li>
                 </ul>
 
-                <h4>3D Controls:</h4>
+                <h4 data-i18n="controls3d.title"></h4>
                 <ul>
-                    <li><strong>Rotate:</strong> Hold left mouse button and drag</li>
-                    <li><strong>Pan:</strong> Hold right mouse button and drag</li>
-                    <li><strong>Zoom:</strong> Use mouse wheel</li>
+                    <li><strong data-i18n="controls3d.rotate"></strong> <span data-i18n="controls3d.rotateDesktop"></span></li>
+                    <li><strong data-i18n="controls3d.pan"></strong> <span data-i18n="controls3d.panDesktop"></span></li>
+                    <li><strong data-i18n="controls3d.zoom"></strong> <span data-i18n="controls3d.zoomDesktop"></span></li>
                 </ul>
 
-                <h4>Color Coding:</h4>
+                <h4 data-i18n="infoModal.colorCoding"></h4>
                 <ul>
-                    <li><strong>Nodes:</strong> The color shows activation strength (dark blue tones for low/negative values, vibrant coral colors for strong positive activations)</li>
-                    <li><strong>Connections:</strong> Warm colors indicate strong positive contributions, cool tones negative influences, muted lines near zero.</li>
+                    <li><strong>Nodes:</strong> <span data-i18n="infoModal.colorCodingNodes"></span></li>
+                    <li><strong>Connections:</strong> <span data-i18n="infoModal.colorCodingConnections"></span></li>
                 </ul>
 
-                <h4>Training Your Own Model:</h4>
+                <h4 data-i18n="infoModal.training"></h4>
                 <ul>
-                    <li>Run <code>python training/mlp_train.py</code> to train the MLP (including Apple Metal acceleration, if available).</li>
-                    <li>The script writes <code>exports/mlp_weights.json</code>, which the visualizer reads on load.</li>
-                    <li>Change the number of hidden neurons, epochs, or export paths via the CLI options documented in <code>training/mlp_train.py</code>.</li>
+                    <li data-i18n-html="infoModal.trainingStep1"></li>
+                    <li data-i18n-html="infoModal.trainingStep2"></li>
+                    <li data-i18n-html="infoModal.trainingStep3"></li>
                 </ul>
 
-                <h4>Real-time Features:</h4>
+                <h4 data-i18n="infoModal.realtimeFeatures"></h4>
                 <ul>
-                    <li><strong>Layer Activations:</strong> Sphere instances show activations per neuron with color-coded strength.</li>
-                    <li><strong>Important Connections:</strong> Each target neuron highlights its strongest input weights for better readability.</li>
-                    <li><strong>Live Probabilities:</strong> The bar chart updates logits → Softmax values in real-time.</li>
+                    <li><strong>Layer Activations:</strong> <span data-i18n="infoModal.realtimeActivations"></span></li>
+                    <li><strong>Important Connections:</strong> <span data-i18n="infoModal.realtimeConnections"></span></li>
+                    <li><strong>Live Probabilities:</strong> <span data-i18n="infoModal.realtimeProbabilities"></span></li>
                 </ul>
 
-                <p>The network is intentionally kept compact to ensure smooth real-time rendering. Feel free to retrain with different layer sizes – just keep the architecture lean so the 3D view remains responsive.</p>
+                <p data-i18n="infoModal.note"></p>
             </div>
         </div>
     </div>
@@ -175,13 +185,12 @@
     <div id="advancedSettingsModal" class="advanced-modal" role="dialog" aria-modal="true" aria-labelledby="advancedSettingsTitle">
         <div class="advanced-modal-content">
             <div class="advanced-modal-header">
-                <h3 id="advancedSettingsTitle">Advanced Settings</h3>
+                <h3 id="advancedSettingsTitle" data-i18n="advancedSettings.title"></h3>
                 <button id="closeAdvancedSettings" class="close-modal-btn" type="button">×</button>
             </div>
             <div class="advanced-modal-body">
                 <div class="advanced-control">
-                    <label for="connectionLimitSlider" class="advanced-label">
-                        Maximum Connections per Neuron
+                    <label for="connectionLimitSlider" class="advanced-label" data-i18n="advancedSettings.maxConnections">
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -194,13 +203,11 @@
                         >
                         <span id="connectionLimitValue" class="advanced-value">24</span>
                     </div>
-                    <p class="advanced-hint">
-                        Controls how many of the strongest incoming weights per target neuron are displayed simultaneously; high values may slow down rendering.
+                    <p class="advanced-hint" data-i18n="advancedSettings.maxConnectionsHint">
                     </p>
                 </div>
                 <div class="advanced-control">
-                    <label for="connectionThresholdSlider" class="advanced-label">
-                        Hide Weak Connections
+                    <label for="connectionThresholdSlider" class="advanced-label" data-i18n="advancedSettings.hideWeakConnections">
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -213,13 +220,11 @@
                         >
                         <span id="connectionThresholdValue" class="advanced-value">0.0000</span>
                     </div>
-                    <p class="advanced-hint">
-                        Hides connections with low absolute weight; 0 shows all connections.
+                    <p class="advanced-hint" data-i18n="advancedSettings.hideWeakConnectionsHint">
                     </p>
                 </div>
                 <div class="advanced-control">
-                    <label for="connectionThicknessSlider" class="advanced-label">
-                        Connection Thickness
+                    <label for="connectionThicknessSlider" class="advanced-label" data-i18n="advancedSettings.connectionThickness">
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -231,13 +236,11 @@
                         >
                         <span id="connectionThicknessValue" class="advanced-value"></span>
                     </div>
-                    <p class="advanced-hint">
-                        Adjusts the radius of connection cylinders; higher values make all lines visibly thicker.
+                    <p class="advanced-hint" data-i18n="advancedSettings.connectionThicknessHint">
                     </p>
                 </div>
                 <div class="advanced-control">
-                    <label for="brushThicknessSlider" class="advanced-label">
-                        Brush Thickness
+                    <label for="brushThicknessSlider" class="advanced-label" data-i18n="advancedSettings.brushThickness">
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -250,13 +253,11 @@
                         >
                         <span id="brushThicknessValue" class="advanced-value">1.4</span>
                     </div>
-                    <p class="advanced-hint">
-                        Smaller values create finer lines; larger values fill the grid faster.
+                    <p class="advanced-hint" data-i18n="advancedSettings.brushThicknessHint">
                     </p>
                 </div>
                 <div class="advanced-control">
-                    <label for="brushStrengthSlider" class="advanced-label">
-                        Brush Strength
+                    <label for="brushStrengthSlider" class="advanced-label" data-i18n="advancedSettings.brushStrength">
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -269,8 +270,7 @@
                         >
                         <span id="brushStrengthValue" class="advanced-value">95%</span>
                     </div>
-                    <p class="advanced-hint">
-                        Determines how much a brush stroke increases pixel brightness.
+                    <p class="advanced-hint" data-i18n="advancedSettings.brushStrengthHint">
                     </p>
                 </div>
             </div>
