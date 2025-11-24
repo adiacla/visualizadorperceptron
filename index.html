@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MNIST MLP – Visualisierung der Inferenz</title>
-  <script type="module" crossorigin src="./assets/main.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main.css">
+    <title>MNIST MLP – Visualización de la Inferencia</title>
+    <script type="module" crossorigin src="./assets/main.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/main.css">
 </head>
 <body>
 
@@ -33,8 +33,8 @@
     <div id="instructionsOverlay" class="instructions-overlay">
         <div class="instructions-container">
             <div class="instructions-content">
-                <p><strong>Zeichnen:</strong> Auf dem Raster klicken und ziehen (Rechtsklick zum Löschen)</p>
-                <p><strong>3D-Steuerung:</strong> • Linke Taste + ziehen = drehen • Rechte Taste + ziehen = verschieben • Scrollrad = zoomen</p>
+                <p><strong>Dibujar:</strong> Haga clic y arrastre sobre la cuadrícula (clic derecho para borrar)</p>
+                <p><strong>Control 3D:</strong> • Botón izquierdo + arrastrar = rotar • Botón derecho + arrastrar = desplazar • Rueda del ratón = zoom</p>
             </div>
         </div>
     </div>
@@ -42,12 +42,12 @@
     <!-- Mobile Instructions Overlay -->
     <div id="mobileInstructionsOverlay" class="mobile-instructions-overlay">
         <div class="mobile-instructions-content">
-            <div class="mobile-instructions-title">Touch-Steuerung</div>
+            <div class="mobile-instructions-title">Controles táctiles</div>
             <ul class="mobile-gesture-list">
-                <li><strong>Zeichnen:</strong> Tippen und auf dem Raster ziehen</li>
-                <li><strong>Drehen:</strong> Mit einem Finger ziehen</li>
-                <li><strong>Verschieben:</strong> Mit zwei Fingern bewegen</li>
-                <li><strong>Zoomen:</strong> Finger zusammenziehen oder spreizen</li>
+                <li><strong>Dibujar:</strong> Tocar y arrastrar sobre la cuadrícula</li>
+                <li><strong>Rotar:</strong> Arrastrar con un dedo</li>
+                <li><strong>Desplazar:</strong> Mover con dos dedos</li>
+                <li><strong>Zoom:</strong> Pellizcar o separar los dedos</li>
             </ul>
         </div>
     </div>
@@ -84,7 +84,7 @@
     <div id="timelineOverlay" class="timeline-overlay hidden">
         <div class="timeline-container">
             <div class="timeline-header">
-                <span class="timeline-title">Trainingsverlauf</span>
+                <span class="timeline-title">Progreso del entrenamiento</span>
                 <span id="timelineSummary" class="timeline-summary"></span>
             </div>
             <input
@@ -95,7 +95,7 @@
                 value="0"
                 step="1"
                 disabled
-                aria-label="Trainingsfortschritt"
+                aria-label="Avance del entrenamiento"
             >
             <div class="timeline-meta">
                 <span id="timelineLabel" class="timeline-label"></span>
@@ -117,56 +117,56 @@
     <div id="infoModal" class="info-modal">
         <div class="info-modal-content">
             <div class="info-modal-header">
-                <h3>MNIST-Ziffernklassifikation – Visualisierung der Inferenz</h3>
+                <h3>Clasificación de Dígitos MNIST – Visualización de la Inferencia</h3>
                 <button id="closeInfoModal" class="close-modal-btn">×</button>
             </div>
             <div class="info-modal-body">
-                <p><strong>Interaktive Visualisierung eines neuronalen Netzes</strong></p>
-                <p>Diese Anwendung zeigt ein kompaktes Multi-Layer-Perceptron (MLP), das auf MNIST trainiert wurde. Zeichnen Sie eine Ziffer und beobachten Sie, wie die Aktivierungen in Echtzeit durch alle vollvernetzten Schichten propagieren.</p>
+                <p><strong>Visualización interactiva de una red neuronal</strong></p>
+                <p>Esta aplicación muestra un perceptrón multicapa (MLP) compacto entrenado en MNIST. Dibuje un dígito y observe cómo las activaciones se propagan en tiempo real a través de todas las capas totalmente conectadas.</p>
                 
-                <h4>So funktioniert es:</h4>
+                <h4>Cómo funciona:</h4>
                 <ul>
-                    <li><strong>Zeichnen:</strong> Im 2D-Raster (links oben) klicken und ziehen, um eine Ziffer zu skizzieren</li>
-                    <li><strong>Beobachten:</strong> Verfolgen Sie, wie Ihre Skizze durch die Schichten des Netzes im 3D-Raum wandert</li>
-                    <li><strong>Vorhersage:</strong> Prüfen Sie die Wahrscheinlichkeit für jede Ziffer (0–9) im Diagramm (rechts oben)</li>
+                    <li><strong>Dibujar:</strong> Haga clic y arrastre en la cuadrícula 2D (arriba izquierda) para dibujar un dígito</li>
+                    <li><strong>Observar:</strong> Siga cómo su imagen atraviesa las capas de la red en el espacio 3D</li>
+                    <li><strong>Predicción:</strong> Revise la probabilidad de cada dígito (0–9) en el gráfico (arriba derecha)</li>
                 </ul>
 
-                <h4>Netzarchitektur (Standardexport):</h4>
+                <h4>Arquitectura de la red (exportación por defecto):</h4>
                 <ul>
-                    <li><strong>Eingabeschicht:</strong> 28×28 Pixelraster (Ihre Zeichnung)</li>
-                    <li><strong>Dichtes Layer 1:</strong> 784 → 64 Neuronen mit ReLU</li>
-                    <li><strong>Dichtes Layer 2:</strong> 64 → 32 Neuronen mit ReLU</li>
-                    <li><strong>Ausgabeschicht:</strong> 32 → 10 Logits → Softmax-Wahrscheinlichkeiten</li>
+                    <li><strong>Capa de entrada:</strong> Rejilla de 28×28 píxeles (su dibujo)</li>
+                    <li><strong>Capa densa 1:</strong> 784 → 64 neuronas con ReLU</li>
+                    <li><strong>Capa densa 2:</strong> 64 → 32 neuronas con ReLU</li>
+                    <li><strong>Capa de salida:</strong> 32 → 10 logits → probabilidades Softmax</li>
                 </ul>
 
-                <h4>3D-Steuerung:</h4>
+                <h4>Controles 3D:</h4>
                 <ul>
-                    <li><strong>Drehen:</strong> Linke Maustaste gedrückt halten und ziehen</li>
-                    <li><strong>Verschieben:</strong> Rechte Maustaste gedrückt halten und ziehen</li>
-                    <li><strong>Zoomen:</strong> Mausrad benutzen</li>
+                    <li><strong>Rotar:</strong> Mantener presionado el botón izquierdo y arrastrar</li>
+                    <li><strong>Desplazar:</strong> Mantener presionado el botón derecho y arrastrar</li>
+                    <li><strong>Zoom:</strong> Usar la rueda del ratón</li>
                 </ul>
 
-                <h4>Farbkodierung:</h4>
+                <h4>Código de colores:</h4>
                 <ul>
-                    <li><strong>Knoten:</strong> Die Farbe zeigt die Aktivierungsstärke (dunkle Blautöne für niedrige/negative Werte, kräftige Korallenfarben für starke positive Aktivierungen)</li>
-                    <li><strong>Verbindungen:</strong> Warme Farben kennzeichnen starke positive Beiträge, kühle Töne negative Einflüsse, gedämpfte Linien nahezu Null.</li>
+                    <li><strong>Nodos:</strong> La coloración refleja la fuerza de activación (azules oscuros para valores bajos/negativos, corales intensos para activaciones positivas fuertes)</li>
+                    <li><strong>Conexiones:</strong> Colores cálidos representan contribuciones positivas fuertes; tonos fríos indican influencias negativas; líneas apagadas indican valores cercanos a cero.</li>
                 </ul>
 
-                <h4>Eigenes Modell trainieren:</h4>
+                <h4>Entrenar su propio modelo:</h4>
                 <ul>
-                    <li><code>python training/mlp_train.py</code> starten, um das MLP zu trainieren (inkl. Apple-Metal-Beschleunigung, falls verfügbar).</li>
-                    <li>Das Skript schreibt <code>exports/mlp_weights.json</code>, das der Visualisierer beim Laden einliest.</li>
-                    <li>Anzahl versteckter Neuronen, Epochen oder Exportpfade über die in <code>training/mlp_train.py</code> dokumentierten CLI-Optionen verändern.</li>
+                    <li>Ejecute <code>python training/mlp_train.py</code> para entrenar el MLP (incluye aceleración Apple Metal si está disponible).</li>
+                    <li>El script genera <code>exports/mlp_weights.json</code>, que el visualizador carga al iniciar.</li>
+                    <li>Modifique el número de neuronas, épocas o rutas de exportación mediante las opciones CLI documentadas en <code>training/mlp_train.py</code>.</li>
                 </ul>
 
-                <h4>Echtzeitfunktionen:</h4>
+                <h4>Funciones en tiempo real:</h4>
                 <ul>
-                    <li><strong>Schichtaktivierungen:</strong> Instanzen von Kugeln zeigen Aktivierungen pro Neuron mit farbcodierter Stärke.</li>
-                    <li><strong>Wichtige Verbindungen:</strong> Jedes Zielneuron hebt seine stärksten Eingangsgewichte für bessere Lesbarkeit hervor.</li>
-                    <li><strong>Live-Wahrscheinlichkeiten:</strong> Das Balkendiagramm aktualisiert die Logits → Softmax-Werte in Echtzeit.</li>
+                    <li><strong>Activaciones por capa:</strong> Las esferas muestran la activación de cada neurona usando colores.</li>
+                    <li><strong>Conexiones relevantes:</strong> Cada neurona destino resalta sus pesos de entrada más fuertes para mejorar la legibilidad.</li>
+                    <li><strong>Probabilidades en vivo:</strong> El gráfico de barras muestra los logits y las probabilidades Softmax en tiempo real.</li>
                 </ul>
 
-                <p>Das Netzwerk ist bewusst kompakt gehalten, um eine flüssige Echtzeitdarstellung zu gewährleisten. Sie können gern mit anderen Schichtgrößen neu trainieren – halten Sie die Architektur nur schlank, damit die 3D-Ansicht reaktionsschnell bleibt.</p>
+                <p>La red se mantiene deliberadamente compacta para asegurar una visualización fluida. Puede entrenar arquitecturas más grandes, pero manténgalas ligeras para que la vista 3D siga siendo ágil.</p>
             </div>
         </div>
     </div>
@@ -175,13 +175,13 @@
     <div id="advancedSettingsModal" class="advanced-modal" role="dialog" aria-modal="true" aria-labelledby="advancedSettingsTitle">
         <div class="advanced-modal-content">
             <div class="advanced-modal-header">
-                <h3 id="advancedSettingsTitle">Erweiterte Einstellungen</h3>
+                <h3 id="advancedSettingsTitle">Configuración avanzada</h3>
                 <button id="closeAdvancedSettings" class="close-modal-btn" type="button">×</button>
             </div>
             <div class="advanced-modal-body">
                 <div class="advanced-control">
                     <label for="connectionLimitSlider" class="advanced-label">
-                        Maximale Verbindungen pro Neuron
+                        Máximo de conexiones por neurona
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -195,12 +195,12 @@
                         <span id="connectionLimitValue" class="advanced-value">24</span>
                     </div>
                     <p class="advanced-hint">
-                        Steuert wie viele der stärksten eingehenden Gewichte pro Zielneuron gleichzeitig dargestellt werden; hohe Werte können die Darstellung verlangsamen.
+                        Controla cuántos de los pesos entrantes más fuertes se muestran por neurona destino; valores altos pueden ralentizar la visualización.
                     </p>
                 </div>
                 <div class="advanced-control">
                     <label for="connectionThresholdSlider" class="advanced-label">
-                        Schwache Verbindungen ausblenden
+                        Ocultar conexiones débiles
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -214,12 +214,12 @@
                         <span id="connectionThresholdValue" class="advanced-value">0.0000</span>
                     </div>
                     <p class="advanced-hint">
-                        Blendet Verbindungen mit geringer absoluter Gewichtung aus; 0 zeigt alle Verbindungen.
+                        Oculta conexiones con bajo peso absoluto; 0 muestra todas las conexiones.
                     </p>
                 </div>
                 <div class="advanced-control">
                     <label for="connectionThicknessSlider" class="advanced-label">
-                        Verbindungsdicke
+                        Grosor de las conexiones
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -232,12 +232,12 @@
                         <span id="connectionThicknessValue" class="advanced-value"></span>
                     </div>
                     <p class="advanced-hint">
-                        Passt den Radius der Verbindungszylinder an; höhere Werte machen alle Linien sichtbar dicker.
+                        Ajusta el radio de los cilindros de conexión; valores altos hacen todas las líneas más gruesas.
                     </p>
                 </div>
                 <div class="advanced-control">
                     <label for="brushThicknessSlider" class="advanced-label">
-                        Strichstärke
+                        Grosor del pincel
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -251,12 +251,12 @@
                         <span id="brushThicknessValue" class="advanced-value">1.4</span>
                     </div>
                     <p class="advanced-hint">
-                        Kleinere Werte erzeugen feinere Linien; größere Werte füllen das Raster schneller aus.
+                        Valores pequeños generan trazos finos; valores grandes llenan la cuadrícula más rápido.
                     </p>
                 </div>
                 <div class="advanced-control">
                     <label for="brushStrengthSlider" class="advanced-label">
-                        Strichintensität
+                        Intensidad del pincel
                     </label>
                     <div class="advanced-slider">
                         <input
@@ -270,7 +270,7 @@
                         <span id="brushStrengthValue" class="advanced-value">95%</span>
                     </div>
                     <p class="advanced-hint">
-                        Bestimmt, wie stark ein Pinselstrich die Pixelhelligkeit erhöht.
+                        Determina cuánto aumenta la luminosidad del píxel cada trazo.
                     </p>
                 </div>
             </div>
@@ -279,9 +279,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    
-
-
 
     <!-- 100% privacy-first analytics -->
     <script data-collect-dnt="true" async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
